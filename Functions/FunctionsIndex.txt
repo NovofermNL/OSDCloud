@@ -1,1 +1,2 @@
-
+Enable-HyperV.ps1
+Set-TrustedPSGallery.ps1
