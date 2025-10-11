@@ -4,7 +4,7 @@
 # Instellingen
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$BaseUrl = 'https://github.com/NovofermNL/OSDCloud/tree/main/Functions'
+$BaseUrl = 'https://github.com/NovofermNL/OSDCloud/main/Functions'
 $IndexFileUrl = "$BaseUrl/FunctionsIndex.txt"
 $LocalRoot = Join-Path $env:TEMP 'Novoferm-Functions'
 $LocalIndex = Join-Path $LocalRoot 'FunctionsIndex.txt'
