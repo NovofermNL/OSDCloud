@@ -1,7 +1,4 @@
-# --- Novoferm Functions Bootstrap (RAW + Normalizer + Logging) ---
-# Leest Functions/FunctionsIndex.txt uit de repo en laadt alle .ps1 functies
-# Logging: C:\Windows\Temp\OSDCloud-Functions.log
-
+# --- Novoferm Functions Bootstrap (RAW + API Fallback + Logging) ---
 [CmdletBinding()]
 param(
     [string]$Owner  = 'NovofermNL',
@@ -9,21 +6,19 @@ param(
     [string]$Branch = 'main'
 )
 
-# TLS 1.2 afdwingen
+# TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 # ===== Instellingen =====
 $BaseRaw       = "https://raw.githubusercontent.com/$Owner/$Repo/$Branch/Functions"
 $IndexFileUrl  = "$BaseRaw/FunctionsIndex.txt"
+$ApiUrl        = "https://api.github.com/repos/$Owner/$Repo/contents/Functions?ref=$Branch"
 
 $LocalRoot     = Join-Path $env:TEMP 'Novoferm-Functions'
 $LocalIndex    = Join-Path $LocalRoot 'FunctionsIndex.txt'
-
-# Log in C:\Windows\Temp conform voorkeur
 $LogFile       = Join-Path $env:SystemRoot 'Temp\OSDCloud-Functions.log'
 
-# Headers voor GitHub
-$Headers       = @{ 'User-Agent' = 'PowerShell' }
+$Headers       = @{ 'User-Agent' = 'PowerShell' ; 'Accept' = 'application/vnd.github+json' }
 
 # ===== Logging helper =====
 function Write-Log {
@@ -32,28 +27,51 @@ function Write-Log {
     "{0}  {1}" -f $stamp, $Message | Add-Content -Path $LogFile -Encoding UTF8
 }
 
-# ===== URL normalizer =====
+# ===== URL normalizer (indexregels => raw URL) =====
 function Convert-ToRawUrl {
     param([Parameter(Mandatory)][string]$Input)
     $line = $Input.Trim()
-    if (-not $line) { return $null }                # leeg
-    if ($line -match '^\s*#') { return $null }      # comment
+    if (-not $line) { return $null }
+    if ($line -match '^\s*#') { return $null }
 
     if ($line -match '^https?://') {
         $url = $line
-        # GitHub UI -> RAW
         if ($url -match '^https?://github\.com/.*/blob/') {
             $url = $url -replace '^https?://github\.com/', 'https://raw.githubusercontent.com/'
             $url = $url -replace '/blob/', '/'
         }
-        # directory-URL's overslaan
         if ($url -match '/tree/') { return $null }
         return $url
     }
 
-    # relative pad (bv. Sub\Naam.ps1)
     $line = $line -replace '^[./\\]+',''
     return "$BaseRaw/$line"
+}
+
+# ===== Helper: veilige webrequest met betere foutuitleg =====
+function Invoke-WebRequestSafe {
+    param(
+        [Parameter(Mandatory)][string]$Uri,
+        [string]$OutFile
+    )
+    try {
+        if ($PSBoundParameters.ContainsKey('OutFile')) {
+            Invoke-WebRequest -Uri $Uri -Headers $Headers -UseBasicParsing -OutFile $OutFile -ErrorAction Stop
+            return @{ Ok = $true; Status = 200 }
+        } else {
+            $r = Invoke-WebRequest -Uri $Uri -Headers $Headers -UseBasicParsing -ErrorAction Stop
+            return @{ Ok = $true; Status = $r.StatusCode; Response = $r }
+        }
+    } catch {
+        $status = $null
+        $desc   = $null
+        if ($_.Exception.Response) {
+            $status = [int]$_.Exception.Response.StatusCode
+            $desc   = $_.Exception.Response.StatusDescription
+        }
+        Write-Log ("WEB-ERROR {0} {1}: {2}" -f $status, $desc, $_.Exception.Message)
+        return @{ Ok = $false; Status = $status; Error = $_.Exception.Message }
+    }
 }
 
 # ===== Start =====
@@ -63,52 +81,74 @@ Write-Log ("Start bootstrap. Index: {0}" -f $IndexFileUrl)
 try {
     Write-Log ("Maken lokale map: {0}" -f $LocalRoot)
     $null = New-Item -Path $LocalRoot -ItemType Directory -Force
-}
-catch {
+} catch {
     Write-Log ("FATALE FOUT: Kan lokale map niet maken. {0}" -f $_.Exception.Message)
     throw "Kan lokale map niet maken."
 }
 
-# Index downloaden
-try {
-    Write-Log ("Downloaden Index: {0}" -f $IndexFileUrl)
-    Invoke-WebRequest -Uri $IndexFileUrl -UseBasicParsing -OutFile $LocalIndex -Headers $Headers -ErrorAction Stop
+# ===== Index downloaden (met fallback naar GitHub API) =====
+$RawUrls = @()
 
-    # Sanity check op HTML
+# 1) Probeer indexbestand
+Write-Log ("Downloaden Index: {0}" -f $IndexFileUrl)
+$idxResult = Invoke-WebRequestSafe -Uri $IndexFileUrl -OutFile $LocalIndex
+if ($idxResult.Ok) {
+    # check op HTML
     $idxHead = Get-Content -Path $LocalIndex -TotalCount 5 -Raw
     if ($idxHead -match '<!DOCTYPE html>|<html|HTTP-EQUIV|<title>') {
-        Write-Log "FATALE FOUT: Index lijkt HTML (verkeerde URL of rate-limit)."
-        throw "Kon FunctionsIndex.txt niet als raw downloaden (HTML ontvangen)."
+        Write-Log "Index lijkt HTML (verkeerde URL/redirect/rate-limit). Gebruik API-fallback."
+        $idxResult = @{ Ok = $false; Status = 0; Error = 'HTML index' }
+    } else {
+        try {
+            $lines = (Get-Content $LocalIndex -Raw -Encoding UTF8) -split "\r?\n"
+            foreach ($l in $lines) {
+                $u = Convert-ToRawUrl -Input $l
+                if ($u) { $RawUrls += $u }
+            }
+            Write-Log ("Index parsed. {0} items." -f $RawUrls.Count)
+        } catch {
+            Write-Log ("FOUT: Indexbestand kon niet worden gelezen. {0}" -f $_.Exception.Message)
+            $idxResult = @{ Ok = $false; Status = 0; Error = 'Parse index fail' }
+        }
     }
-    Write-Log ("Index succesvol gedownload naar {0}" -f $LocalIndex)
-}
-catch {
-    Write-Log ("FATALE FOUT: kon index niet downloaden. {0}" -f $_.Exception.Message)
-    throw "Kon FunctionsIndex.txt niet downloaden."
 }
 
-# Lijst parsen & normaliseren
-$RawUrls = @()
-try {
-    $lines = (Get-Content $LocalIndex -Raw -Encoding UTF8) -split "\r?\n"
-    foreach ($l in $lines) {
-        $u = Convert-ToRawUrl -Input $l
-        if ($u) { $RawUrls += $u }
+# 2) Fallback via GitHub API: lijst Functions/ inhoud en pak .ps1 download_url
+if (-not $idxResult.Ok) {
+    Write-Log ("API-fallback ophalen: {0}" -f $ApiUrl)
+    $apiCall = $null
+    try {
+        $apiCall = Invoke-RestMethod -Uri $ApiUrl -Headers $Headers -ErrorAction Stop
+    } catch {
+        Write-Log ("FATALE FOUT: GitHub API mislukt: {0}" -f $_.Exception.Message)
+        throw "Kon FunctionsIndex niet ophalen via index of API."
     }
-}
-catch {
-    Write-Log ("FATALE FOUT: Indexbestand kon niet worden gelezen. {0}" -f $_.Exception.Message)
-    throw "Kon FunctionsIndex.txt niet lezen."
+
+    if (-not $apiCall) {
+        Write-Log "FATALE FOUT: Lege API-respons."
+        throw "Lege API-respons van GitHub."
+    }
+
+    # Filter alleen files die op .ps1 eindigen
+    $ps1 = $apiCall | Where-Object { $_.type -eq 'file' -and $_.name -like '*.ps1' }
+    if (-not $ps1) {
+        Write-Log "FATALE FOUT: Geen .ps1 in /Functions via API."
+        throw "Geen .ps1 bestanden gevonden via API."
+    }
+
+    # Gebruik download_url (raw)
+    $RawUrls = $ps1.download_url
+    Write-Log ("API-fallback gebruikt. {0} items." -f $RawUrls.Count)
 }
 
 if (-not $RawUrls -or $RawUrls.Count -eq 0) {
-    Write-Log "FATALE FOUT: index bevat geen valide file-urls."
-    throw "FunctionsIndex.txt bevat geen geldige items."
+    Write-Log "FATALE FOUT: Geen geldige items na index+API."
+    throw "Geen functies om te laden."
 }
 
 Write-Log ("Genormaliseerde items:`n{0}" -f ($RawUrls -join "`n"))
 
-# Functions downloaden + laden
+# ===== Functions downloaden + laden =====
 $Loaded = @()
 foreach ($src in $RawUrls) {
     try {
@@ -119,7 +159,7 @@ foreach ($src in $RawUrls) {
             continue
         }
 
-        # relative pad reconstrueren na '/Functions/'
+        # relative pad reconstrueren na '/Functions/' indien aanwezig
         $rel = $name
         if ($uri.AbsolutePath -match '/Functions/(.+)$') { $rel = $Matches[1] }
 
@@ -130,7 +170,10 @@ foreach ($src in $RawUrls) {
         }
 
         Write-Log ("Downloaden: {0} -> {1}" -f $src, $dst)
-        Invoke-WebRequest -Uri $src -UseBasicParsing -OutFile $dst -Headers $Headers -ErrorAction Stop
+        $fileResult = Invoke-WebRequestSafe -Uri $src -OutFile $dst
+        if (-not $fileResult.Ok) {
+            throw "HTTP fout bij download ($($fileResult.Status)): $($fileResult.Error)"
+        }
 
         # HTML-detectie
         $head = Get-Content -Path $dst -TotalCount 8 -Raw
@@ -144,8 +187,7 @@ foreach ($src in $RawUrls) {
         . $dst
         $Loaded += $rel
         Write-Log ("Loaded: {0}" -f $rel)
-    }
-    catch {
+    } catch {
         Write-Log ("FOUT bij {0}: {1}" -f $src, $_.Exception.Message)
         throw "Kon functie van '$src' niet downloaden of laden."
     }
