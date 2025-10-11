@@ -1,3 +1,5 @@
+Write-Host "[+] Function Set-TrustedPSGallery"
+
 function Set-TrustedPSGallery {
     <#
     Scriptnaam: Set-TrustedPSGallery
