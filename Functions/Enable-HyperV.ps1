@@ -1,3 +1,6 @@
+Write-Host "[+] Function Enable-HyperV"
+
+
 function Enable-HyperV {
     <#
     .SYNOPSIS
