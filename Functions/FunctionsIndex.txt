@@ -1,2 +1,3 @@
 Enable-HyperV.ps1
 Set-TrustedPSGallery.ps1
+Set-DefaultProfilePersonalPref.ps1
