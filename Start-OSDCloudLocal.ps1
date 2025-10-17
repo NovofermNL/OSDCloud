@@ -51,18 +51,23 @@ function Get-OSDCloudDrive {
 #   OSDCLOUD Image - Netwerk Share
 #=======================================================================
 
-$credentials = (Get-Credential)
-$ImageNetworkPath = "\\10.101.1.20\\osdeploy$\OS\W11-24H2-x64\" /user:$credentials
+# Vraag credentials op
+$Credentials = Get-Credential
 
-# Definieer het pad en de bestandsnaam van de WIM-image op de netwerkshare
-#$ImageNetworkPath = "\\10.101.1.20\\osdeploy$\OS\W11-24H2-x64\"
-#$ImageNetworkPath = "N:\"
-$WIMName = "W11_Pro_x64_20251510.wim" 
+# Maak tijdelijk een PSDrive aan naar de share
+New-PSDrive -Name "OSD" -PSProvider FileSystem -Root "\\10.101.1.20\osdeploy$" -Credential $Credentials
+
+# Definieer het pad en bestandsnaam
+$ImageNetworkPath = "OSD:\OS\W11-24H2-x64\"
+$WIMName = "W11_Pro_x64_20251510.wim"
 $ImageFileFullName = Join-Path -Path $ImageNetworkPath -ChildPath $WIMName
 
-$uselocalimage = $true # Dit betekent dat we een 'local' (vaste) image gebruiken i.p.v. downloaden
+$UseLocalImage = $true
+Write-Host -ForegroundColor Green -BackgroundColor Black "UseLocalImage is set to: $UseLocalImage (Netwerklocatie)"
 
-Write-Host -ForegroundColor Green -BackgroundColor Black "UseLocalImage is set to: $uselocalimage (Netwerklocatie)"
+# (optioneel) Na afloop opruimen:
+# Remove-PSDrive -Name "OSD"
+
 
 if ($uselocalimage -eq $true) {
     if (Test-Path $ImageFileFullName) {
