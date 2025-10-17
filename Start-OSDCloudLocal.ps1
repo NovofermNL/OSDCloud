@@ -51,11 +51,12 @@ function Get-OSDCloudDrive {
 #   OSDCLOUD Image - Netwerk Share
 #=======================================================================
 
-#net use N: \\10.101.1.20\\osdeploy$\OS\W11-24H2-x64\
+$credentials = (Get-Credential)
+$ImageNetworkPath = "\\10.101.1.20\\osdeploy$\OS\W11-24H2-x64\" /user:$credentials
 
 # Definieer het pad en de bestandsnaam van de WIM-image op de netwerkshare
 #$ImageNetworkPath = "\\10.101.1.20\\osdeploy$\OS\W11-24H2-x64\"
-$ImageNetworkPath = "N:\"
+#$ImageNetworkPath = "N:\"
 $WIMName = "W11_Pro_x64_20251510.wim" 
 $ImageFileFullName = Join-Path -Path $ImageNetworkPath -ChildPath $WIMName
 
