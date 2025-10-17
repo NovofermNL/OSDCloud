@@ -82,12 +82,6 @@ if ($uselocalimage -eq $true) {
     } else {
         Write-Host -ForegroundColor Red -BackgroundColor Black "Fout: WIM-bestand NIET gevonden op $ImageFileFullName."
         Write-Host -ForegroundColor Red -BackgroundColor Black "Controleer netwerktoegang en pad. Schakel over op de standaard OSDCloud downloadmethode."
-        $uselocalimage = $false
-        
-        # OSDCloud Variabelen resetten voor een normale online installatie
-        $Global:MyOSDCloud.ImageFileItem = $null
-        $Global:MyOSDCloud.ImageFileName = $null
-        $Global:MyOSDCloud.ImageFileFullName = $null
         
         Start-Sleep -Seconds 10
     }
