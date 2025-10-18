@@ -2,7 +2,9 @@ $ScriptName = 'Installeren Windows 11'
 $ScriptVersion = '24.7.4.4'
 Write-Host -ForegroundColor Green "$ScriptName $ScriptVersion"
 
+# ── Hardening voor webcalls en errors
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$ErrorActionPreference = 'Stop'
 
 #=======================================================================
 #   OSDCLOUD Definitions
@@ -35,24 +37,19 @@ $Global:MyOSDCloud = [ordered]@{
 #=======================================================================
 #   HP / HPIA / BIOS/TPM integratie (Hyper-V safe, ZTI-proof)
 #=======================================================================
-# 0) Defaults (veilig)
-$HPTPM = $false
-$HPBIOS = $false
-$HPIADrivers = $false
-$HPEnterprise = $false
+$HPTPM = $false; $HPBIOS = $false; $HPIADrivers = $false; $HPEnterprise = $false
 
-# 1) VM/Hyper-V detectie -> HP-flow overslaan
+# VM-detectie
 $cs = Get-CimInstance -ClassName Win32_ComputerSystem
 $sp = Get-CimInstance -ClassName Win32_ComputerSystemProduct -ErrorAction SilentlyContinue
 $Manufacturer = $cs.Manufacturer
 $Model = $cs.Model
 $vendor = $sp.Vendor
 $product = $sp.Name
-$IsVM = $false
-if ($Manufacturer -match 'Microsoft Corporation' -and $Model -match 'Virtual Machine') { $IsVM = $true }
-if ($vendor -match 'Microsoft Corporation' -and $product -match 'Virtual Machine') { $IsVM = $true }
+$IsVM = ($Manufacturer -match 'Microsoft Corporation' -and $Model -match 'Virtual Machine') -or
+        ($vendor -match 'Microsoft Corporation' -and $product -match 'Virtual Machine')
 
-# 2) Internet check
+# Internet check
 $InternetConnection = $false
 try {
     $resp = Invoke-WebRequest -Uri 'http://www.msftconnecttest.com/connecttest.txt' -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
@@ -60,61 +57,42 @@ try {
 }
 catch { $InternetConnection = $false }
 
-# 3) OSDCloud functions laden (best-effort) + controle op cmdlets
+# OSDCloud functions (best-effort)
 $FunctionsLoaded = $false
 if ($InternetConnection -and -not $IsVM) {
     try {
         Invoke-Expression -Command (Invoke-RestMethod -Uri 'https://functions.osdcloud.com')
         $FunctionsLoaded = $true
     }
-    catch {
-        Write-Warning "OSDCloud functions niet geladen: $($_.Exception.Message)"
-    }
+    catch { Write-Warning "OSDCloud functions niet geladen: $($_.Exception.Message)" }
 }
 
-# 4) HP detectie + enterprise check (alleen als geen VM, wel internet, en functions bestaan)
+# HP enterprise check
 $HasTestHPIA = ($null -ne (Get-Command Test-HPIASupport -ErrorAction SilentlyContinue))
 if (-not $IsVM -and $InternetConnection -and $FunctionsLoaded -and $HasTestHPIA -and ($Manufacturer -match 'HP|Hewlett-Packard')) {
-    try {
-        $HPEnterprise = Test-HPIASupport
-    }
-    catch {
-        $HPEnterprise = $false
-        Write-Warning "Test-HPIASupport faalde: $($_.Exception.Message)"
-    }
+    try { $HPEnterprise = Test-HPIASupport } catch { Write-Warning "Test-HPIASupport faalde: $($_.Exception.Message)"; $HPEnterprise = $false }
 }
 
-# 5) HP Enterprise flow (alleen als echt ondersteund)
+# HP enterprise flow
 if ($HPEnterprise) {
     try {
-        # deviceshp module dynamisch laden
         Invoke-Expression (Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/OSDeploy/OSD/master/cloud/modules/deviceshp.psm1')
-
-        # HPCMSL installeren
-        if ($null -eq (Get-Command osdcloud-InstallModuleHPCMSL -ErrorAction SilentlyContinue)) {
-            throw "osdcloud-InstallModuleHPCMSL niet beschikbaar."
-        }
+        if (-not (Get-Command osdcloud-InstallModuleHPCMSL -ErrorAction SilentlyContinue)) { throw "osdcloud-InstallModuleHPCMSL niet beschikbaar." }
         osdcloud-InstallModuleHPCMSL
-
-        # Determine TPM/BIOS (cmdlets checken op bestaan)
-        if ($null -eq (Get-Command osdcloud-HPTPMDetermine -ErrorAction SilentlyContinue)) { throw "osdcloud-HPTPMDetermine niet beschikbaar." }
-        if ($null -eq (Get-Command osdcloud-HPBIOSDetermine -ErrorAction SilentlyContinue)) { throw "osdcloud-HPBIOSDetermine niet beschikbaar." }
+        if (-not (Get-Command osdcloud-HPTPMDetermine -ErrorAction SilentlyContinue)) { throw "osdcloud-HPTPMDetermine niet beschikbaar." }
+        if (-not (Get-Command osdcloud-HPBIOSDetermine -ErrorAction SilentlyContinue)) { throw "osdcloud-HPBIOSDetermine niet beschikbaar." }
 
         $TPM = osdcloud-HPTPMDetermine
         $BIOS = osdcloud-HPBIOSDetermine
         $HPIADrivers = $true
 
         if ($TPM) { Write-Host "HP TPM firmware update vereist: $TPM" -ForegroundColor Yellow; $HPTPM = $true }
-
         if ($BIOS -eq $false) {
             if (Get-Command Get-HPBIOSVersion -ErrorAction SilentlyContinue) {
                 $CurrentVer = Get-HPBIOSVersion
                 Write-Host "HP System Firmware up-to-date: $CurrentVer" -ForegroundColor Green
             }
-            else {
-                Write-Host "HP System Firmware up-to-date (versiecmdlet niet beschikbaar)" -ForegroundColor Green
-            }
-            $HPBIOS = $false
+            else { Write-Host "HP System Firmware up-to-date" -ForegroundColor Green }
         }
         else {
             if (Get-Command Get-HPBIOSUpdates -ErrorAction SilentlyContinue) {
@@ -122,9 +100,7 @@ if ($HPEnterprise) {
                 $CurrentVer = (Get-HPBIOSVersion)
                 Write-Host "HP System Firmware update: $CurrentVer -> $LatestVer" -ForegroundColor Yellow
             }
-            else {
-                Write-Host "HP System Firmware update nodig (details onbekend; cmdlets niet beschikbaar)" -ForegroundColor Yellow
-            }
+            else { Write-Host "HP System Firmware update nodig" -ForegroundColor Yellow }
             $HPBIOS = $true
         }
     }
@@ -134,19 +110,18 @@ if ($HPEnterprise) {
     }
 }
 else {
-    if ($IsVM) { Write-Host "VM gedetecteerd (Hyper-V/virtueel). HP/HPIA wordt overgeslagen." -ForegroundColor DarkYellow }
-    elseif (-not $InternetConnection) { Write-Host "Geen internet in WinPE; HP/HPIA wordt overgeslagen." -ForegroundColor DarkYellow }
-    elseif (-not $FunctionsLoaded) { Write-Host "OSDCloud functions niet geladen; HP/HPIA wordt overgeslagen." -ForegroundColor DarkYellow }
-    elseif (-not $HasTestHPIA) { Write-Host "Test-HPIASupport niet beschikbaar; HP/HPIA wordt overgeslagen." -ForegroundColor DarkYellow }
-    elseif ($Manufacturer -notmatch 'HP|Hewlett-Packard') { Write-Host "Geen HP hardware gedetecteerd; HP/HPIA wordt overgeslagen." -ForegroundColor DarkYellow }
+    if ($IsVM) { Write-Host "VM gedetecteerd (Hyper-V). HP/HPIA overgeslagen." -ForegroundColor DarkYellow }
+    elseif (-not $InternetConnection) { Write-Host "Geen internet in WinPE; HP/HPIA overgeslagen." -ForegroundColor DarkYellow }
+    elseif (-not $FunctionsLoaded) { Write-Host "OSDCloud functions niet geladen; HP/HPIA overgeslagen." -ForegroundColor DarkYellow }
+    elseif (-not $HasTestHPIA) { Write-Host "Test-HPIASupport niet beschikbaar; HP/HPIA overgeslagen." -ForegroundColor DarkYellow }
+    elseif ($Manufacturer -notmatch 'HP|Hewlett-Packard') { Write-Host "Geen HP hardware; HP/HPIA overgeslagen." -ForegroundColor DarkYellow }
 }
 
-# 6) Schrijf HP-flags terug naar jouw MyOSDCloud (alleen HP-gerelateerd)
+# HP-flags terugzetten
 $Global:MyOSDCloud.HPIADrivers = [bool]$HPIADrivers
 $Global:MyOSDCloud.HPTPMUpdate = [bool]$HPTPM
 $Global:MyOSDCloud.HPBIOSUpdate = [bool]$HPBIOS
-
-Write-Host "HP/HPIA summary -> VM:$IsVM  Internet:$InternetConnection  HPIA:$HPIADrivers  TPM:$HPTPM  BIOS:$HPBIOS" -ForegroundColor Cyan
+Write-Host "HP/HPIA summary -> VM:$IsVM Internet:$InternetConnection HPIA:$HPIADrivers TPM:$HPTPM BIOS:$HPBIOS" -ForegroundColor Cyan
 
 #=======================================================================
 #   LOCAL DRIVE LETTERS (CIM)
@@ -167,19 +142,17 @@ function Get-OSDCloudDrive {
 #=======================================================================
 $uselocalimage = $true
 $OSDCloudDrive = Get-OSDCloudDrive
-Write-Host -ForegroundColor Green "UseLocalImage is set to: $uselocalimage"
+$ImageFileItem = $null   # init voor nette linting/analyzers
 
-if (-not $OSDCloudDrive) {
-    Write-Warning "OSDCloudUSB niet gevonden; overschakelen op online image."
-    $uselocalimage = $false
-}
+Write-Host -ForegroundColor Green "UseLocalImage is set to: $uselocalimage"
+if (-not $OSDCloudDrive) { Write-Warning "OSDCloudUSB niet gevonden; online image."; $uselocalimage = $false }
 
 if ($uselocalimage) {
     $wimRoot = Join-Path $OSDCloudDrive 'OSDCloud\OS'
     $wimFiles = Get-ChildItem -Path $wimRoot -Filter "*.wim" -Recurse -File -ErrorAction SilentlyContinue
 
     if (-not $wimFiles -or $wimFiles.Count -eq 0) {
-        Write-Warning "Geen WIM-bestanden gevonden in $wimRoot"
+        Write-Warning "Geen WIM-bestanden in $wimRoot"
         $uselocalimage = $false
     }
     else {
@@ -187,13 +160,18 @@ if ($uselocalimage) {
             $ImageFileItem = $wimFiles | Select-Object -First 1
         }
         else {
-            $i = 1; $wimFiles | ForEach-Object { Write-Host ("{0}. {1}" -f $i, $_.FullName) -ForegroundColor Yellow; $i++ }
-            $selection = Read-Host "`nTyp het nummer van het bestand dat je wilt gebruiken (1-$($wimFiles.Count))"
-            if ($selection -as [int] -and $selection -ge 1 -and $selection -le $wimFiles.Count) {
+            $i = 1
+            $wimFiles | ForEach-Object {
+                Write-Host ("{0}. {1}" -f $i, $_.FullName) -ForegroundColor Yellow
+                $i++
+            }
+            $selectionRaw = Read-Host "`nTyp het nummer (1-$($wimFiles.Count))"
+            $selection = [int]$selectionRaw
+            if ($selection -ge 1 -and $selection -le $wimFiles.Count) {
                 $ImageFileItem = $wimFiles[$selection - 1]
             }
             else {
-                Write-Warning "Ongeldige selectie; overschakelen op online image."
+                Write-Warning "Ongeldige selectie; online image."
                 $uselocalimage = $false
             }
         }
@@ -204,19 +182,18 @@ if ($uselocalimage) {
             $Global:MyOSDCloud.ImageFileFullName = $ImageFileItem.FullName
 
             $imgInfo = Get-WindowsImage -ImagePath $ImageFileItem.FullName -ErrorAction SilentlyContinue
-            $Global:MyOSDCloud.OSImageIndex = ($imgInfo | Where-Object { $_.ImageName -match $OSEdition } | Select-Object -First 1).ImageIndex
-            if (-not $Global:MyOSDCloud.OSImageIndex) { $Global:MyOSDCloud.OSImageIndex = 1 }
+            if ($imgInfo) {
+                $match = $imgInfo | Where-Object { $_.ImageName -match $OSEdition } | Select-Object -First 1
+                $Global:MyOSDCloud.OSImageIndex = if ($match) { $match.ImageIndex } else { 1 }
+            }
+            else {
+                $Global:MyOSDCloud.OSImageIndex = 1
+            }
 
             Write-Host "`nWIM-bestand gekozen: $($ImageFileItem.Name) [Index $($Global:MyOSDCloud.OSImageIndex)]" -ForegroundColor Green
         }
     }
 }
-
-#=======================================================================
-#   Write OSDCloud VARS to Console
-#=======================================================================
-Write-Output $Global:MyOSDCloud
-
 #=======================================================================
 #   Update OSDCloud modules (pak hoogste versie)
 #=======================================================================
@@ -228,30 +205,59 @@ if (-not $ModulePath) { throw "OSD module niet gevonden in $moduleRoot" }
 Import-Module (Join-Path $ModulePath 'OSD.psd1') -Force
 
 #=======================================================================
-#   Pre-stage OOBE/SetupComplete vóór Start-OSDCloud
+#   Start OSDCloud (géén auto-reboot) — staging komt erna
 #=======================================================================
-Write-Host -ForegroundColor Green "Downloading and creating script for OOBE phase"
-New-Item -ItemType Directory -Path 'C:\Windows\Setup\scripts' -Force | Out-Null
+$Global:MyOSDCloud.Restart = $false   # belangrijk: wij rebooten zelf als laatste
+Write-Host "Starting OSDCloud" -ForegroundColor Green
+if ($uselocalimage -and $Global:MyOSDCloud.ImageFileFullName) {
+    Write-Host "Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage -ImageFileFullName $($Global:MyOSDCloud.ImageFileFullName) -OSImageIndex $($Global:MyOSDCloud.OSImageIndex)"
+    Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage `
+        -ImageFileFullName $Global:MyOSDCloud.ImageFileFullName -OSImageIndex $Global:MyOSDCloud.OSImageIndex
+}
+else {
+    Write-Host "Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage"
+    Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage
+}
 
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Remove-AppX.ps1' -Encoding ascii -Force
-Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin" -OutFile "C:\Windows\Setup\scripts\start2.bin"
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Copy-Start.ps1' -Encoding ascii -Force
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/OSUpdate.ps1"   | Out-File -FilePath 'C:\Windows\Setup\scripts\OSUpdate.ps1' -Encoding ascii -Force
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\New-ComputerName.ps1' -Encoding ascii -Force
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-OSUpdateTask.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Create-OSUpdateTask.ps1' -Encoding ascii -Force
+Write-Host -ForegroundColor Green "OS toegepast. Staging SetupComplete/oobe op doel-OS..."
 
-$OOBECMD = @'
+#=======================================================================
+#   NA imaging: stage OOBE + SetupComplete op DOEL-OS
+#=======================================================================
+function Get-TargetWindowsDrive {
+    foreach ($dl in 'C'..'Z') {
+        if (Test-Path "$dl`:\Windows\System32" -ErrorAction SilentlyContinue) { return $dl }
+    }
+    return $null
+}
+$Target = Get-TargetWindowsDrive
+if (-not $Target) { throw "Doel-OS partitie niet gevonden." }
+
+$ScriptPath = "$Target`:\Windows\Setup\Scripts"
+New-Item -ItemType Directory -Path $ScriptPath -Force | Out-Null
+
+# Bestanden downloaden naar DOEL-OS (let op case: SetupCompleteFiles)
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1"           | Out-File -FilePath "$ScriptPath\Remove-AppX.ps1" -Encoding ascii -Force
+Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin"                                   -OutFile "$ScriptPath\start2.bin"
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1"            | Out-File -FilePath "$ScriptPath\Copy-Start.ps1" -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/OSUpdate.ps1"              | Out-File -FilePath "$ScriptPath\OSUpdate.ps1" -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1"      | Out-File -FilePath "$ScriptPath\New-ComputerName.ps1" -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-OSUpdateTask.ps1"   | Out-File -FilePath "$ScriptPath\Create-OSUpdateTask.ps1" -Encoding ascii -Force
+
+# oobe.cmd (overwriting is prima)
+@'
 @echo off
 :: OOBE fase verwijder standaard apps en wijzig start-menu
-start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File C:\Windows\Setup\scripts\Remove-AppX.ps1
-::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File C:\Windows\Setup\scripts\Copy-Start.ps1
-'@
-$OOBECMD | Out-File -FilePath 'C:\Windows\Setup\scripts\oobe.cmd' -Encoding ascii -Force
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File %WINDIR%\Setup\Scripts\Remove-AppX.ps1
+::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File %WINDIR%\Setup\Scripts\Copy-Start.ps1
+'@ | Out-File -FilePath "$ScriptPath\oobe.cmd" -Encoding ascii -Force
 
-$SetupComplete = @'
-@echo off
+# SetupComplete: append als die al bestaat, anders nieuw maken
+$SetupCompletePath = "$ScriptPath\SetupComplete.cmd"
+$SetupBlock = @'
+:: === Begin custom block ===
 for /f %%a in ('powershell -NoProfile -Command "(Get-Date).ToString('yyyy-MM-dd-HHmmss')"') do set logname=%%a-Cleanup-Script.log
-set logfolder=C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\OSD
+set logfolder=%ProgramData%\Microsoft\IntuneManagementExtension\Logs\OSD
 set logfile=%logfolder%\%logname%
 if not exist "%logfolder%" mkdir "%logfolder%"
 C:
@@ -268,12 +274,11 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v HideRecommendedSe
 reg add "HKU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f
 
 echo === Start Cleanup %date% %time% === >> "%logfile%"
-if exist "C:\Windows\Temp" copy /Y "C:\Windows\Temp\*.log" "%logfolder%" >> "%logfile%" 2>&1
-if exist "C:\Temp"         copy /Y "C:\Temp\*.log"         "%logfolder%" >> "%logfile%" 2>&1
+if exist "%WINDIR%\Temp" copy /Y "%WINDIR%\Temp\*.log" "%logfolder%" >> "%logfile%" 2>&1
 if exist "C:\OSDCloud\Logs" copy /Y "C:\OSDCloud\Logs\*.log" "%logfolder%" >> "%logfile%" 2>&1
-if exist "C:\ProgramData\OSDeploy" copy /Y "C:\ProgramData\OSDeploy\*.log" "%logfolder%" >> "%logfile%" 2>&1
+if exist "%ProgramData%\OSDeploy" copy /Y "%ProgramData%\OSDeploy\*.log" "%logfolder%" >> "%logfile%" 2>&1
 
-for %%D in ("C:\OSDCloud" "C:\Drivers" "C:\Intel" "C:\ProgramData\OSDeploy") do (
+for %%D in ("C:\OSDCloud" "C:\Drivers" "C:\Intel" "%ProgramData%\OSDeploy") do (
     if exist %%D (
         echo Removing folder %%D >> "%logfile%"
         rmdir /S /Q %%D >> "%logfile%" 2>&1
@@ -281,32 +286,23 @@ for %%D in ("C:\OSDCloud" "C:\Drivers" "C:\Intel" "C:\ProgramData\OSDeploy") do 
 )
 
 echo Starten van Copy-Start.ps1 >> "%logfile%"
-start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\Copy-Start.ps1" >> "%logfile%" 2>&1
-start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\Create-OSUpdateTask.ps1" >> "%logfile%" 2>&1
-
-::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\New-ComputerName.ps1" >> "%logfile%" 2>&1
-::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
-
-echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
-exit /b 0
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "%WINDIR%\Setup\Scripts\Copy-Start.ps1" >> "%logfile%" 2>&1
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "%WINDIR%\Setup\Scripts\Create-OSUpdateTask.ps1" >> "%logfile%" 2>&1
+:: === Einde custom block ===
 '@
-$SetupComplete | Out-File -FilePath 'C:\Windows\Setup\scripts\SetupComplete.cmd' -Encoding ascii -Force
 
-#=======================================================================
-#   Start OSDCloud installation (na staging)
-#=======================================================================
-Write-Host "Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage"
-if ($uselocalimage -and $Global:MyOSDCloud.ImageFileFullName) {
-    Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage `
-        -ImageFileFullName $Global:MyOSDCloud.ImageFileFullName -OSImageIndex $Global:MyOSDCloud.OSImageIndex
+if (Test-Path $SetupCompletePath) {
+    Add-Content -Path $SetupCompletePath -Value "`r`n$SetupBlock`r`n"
 }
 else {
-    Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage
+    "@echo off`r`n$SetupBlock`r`nexit /b 0" | Out-File -FilePath $SetupCompletePath -Encoding ascii -Force
 }
 
-Write-Host "OSDCloud Process Complete, Running Custom Actions From Script Before Reboot" -ForegroundColor Green
+Write-Host "Staging klaar op $Target`: $ScriptPath" -ForegroundColor Green
 
-
+#=======================================================================
+#   Reboot
+#=======================================================================
 #Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
 #Start-Sleep -Seconds 20
 #wpeutil reboot
