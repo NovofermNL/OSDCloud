@@ -2,8 +2,6 @@ $ScriptName = 'Installeren Windows 11'
 $ScriptVersion = '24.7.4.4'
 Write-Host -ForegroundColor Green "$ScriptName $ScriptVersion"
 
-#[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
 #=======================================================================
 #   OSDCLOUD Definitions
 #=======================================================================
@@ -235,12 +233,12 @@ $ScriptPath = "$Target`:\Windows\Setup\Scripts"
 New-Item -ItemType Directory -Path $ScriptPath -Force | Out-Null
 
 # Bestanden downloaden naar DOEL-OS (let op case: SetupCompleteFiles)
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1"           | Out-File -FilePath "$ScriptPath\Remove-AppX.ps1" -Encoding ascii -Force
-Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin"                                   -OutFile "$ScriptPath\start2.bin"
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1"            | Out-File -FilePath "$ScriptPath\Copy-Start.ps1" -Encoding ascii -Force
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/OSUpdate.ps1"              | Out-File -FilePath "$ScriptPath\OSUpdate.ps1" -Encoding ascii -Force
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1"      | Out-File -FilePath "$ScriptPath\New-ComputerName.ps1" -Encoding ascii -Force
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-OSUpdateTask.ps1"   | Out-File -FilePath "$ScriptPath\Create-OSUpdateTask.ps1" -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1" | Out-File -FilePath "$ScriptPath\Remove-AppX.ps1" -Encoding ascii -Force
+Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin" -OutFile "$ScriptPath\start2.bin"
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1"c | Out-File -FilePath "$ScriptPath\Copy-Start.ps1" -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/OSUpdate.ps1" | Out-File -FilePath "$ScriptPath\OSUpdate.ps1" -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1" | Out-File -FilePath "$ScriptPath\New-ComputerName.ps1" -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-OSUpdateTask.ps1" | Out-File -FilePath "$ScriptPath\Create-OSUpdateTask.ps1" -Encoding ascii -Force
 
 # oobe.cmd (overwriting is prima)
 @'
