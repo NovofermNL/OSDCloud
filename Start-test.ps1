@@ -24,7 +24,7 @@ $Global:MyOSDCloud = [ordered]@{
     WindowsUpdate         = [bool]$true
     MSCatalogFirmware     = [bool]$false
     WindowsUpdateDrivers  = [bool]$true
-    WindowsDefenderUpdate = [bool]$false   # laat zoals jij 'm had
+    WindowsDefenderUpdate = [bool]$false
     SetTimeZone           = [bool]$true
     SkipClearDisk         = [bool]$false
     ClearDiskConfirm      = [bool]$false
@@ -308,7 +308,7 @@ else {
 
 Write-Host "OSDCloud Process Complete, Running Custom Actions From Script Before Reboot" -ForegroundColor Green
 
-# Herstart na 20 seconden (alleen als je zeker weet dat er nog niet gereboot is)
-Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
-Start-Sleep -Seconds 20
-wpeutil reboot
+
+#Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
+#Start-Sleep -Seconds 20
+#wpeutil reboot
