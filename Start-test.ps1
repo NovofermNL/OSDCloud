@@ -9,13 +9,13 @@ $ErrorActionPreference = 'Stop'
 #=======================================================================
 #   OSDCLOUD Definitions
 #=======================================================================
-$OSName       = 'Windows 11 24H2 x64'
-$OSEdition    = 'Pro'
+$OSName = 'Windows 11 24H2 x64'
+$OSEdition = 'Pro'
 $OSActivation = 'Volume'
-$OSLanguage   = 'nl-nl'
+$OSLanguage = 'nl-nl'
 
 #=======================================================================
-#   OSDCLOUD VARS
+#   OSDCLOUD VARS (defaults)
 #=======================================================================
 $Global:MyOSDCloud = [ordered]@{
     Restart               = [bool]$false
@@ -24,7 +24,7 @@ $Global:MyOSDCloud = [ordered]@{
     WindowsUpdate         = [bool]$true
     MSCatalogFirmware     = [bool]$false
     WindowsUpdateDrivers  = [bool]$true
-    WindowsDefenderUpdate = [bool]$false
+    WindowsDefenderUpdate = [bool]$false   # laat zoals jij 'm had
     SetTimeZone           = [bool]$true
     SkipClearDisk         = [bool]$false
     ClearDiskConfirm      = [bool]$false
@@ -32,93 +32,128 @@ $Global:MyOSDCloud = [ordered]@{
     SyncMSUpCatDriverUSB  = [bool]$true
     CheckSHA1             = [bool]$true
     ZTI                   = [bool]$true
+
+    # HP-afhankelijk (initieel false; worden later gezet indien van toepassing)
+    HPIADrivers           = [bool]$false
+    HPTPMUpdate           = [bool]$false
+    HPBIOSUpdate          = [bool]$false
 }
 
 #=======================================================================
-#   HP / HPIA / BIOS/TPM integratie (ZTI-proof)
+#   HP / HPIA / BIOS/TPM integratie (Hyper-V safe, ZTI-proof)
 #=======================================================================
-# 1) Internet check
-$InternetConnection = $false
-try {
-    $resp = Invoke-WebRequest -Uri 'http://www.msftconnecttest.com/connecttest.txt' -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
-    if ($resp.StatusCode -eq 200 -and $resp.Content -match 'Microsoft') { $InternetConnection = $true }
-} catch { $InternetConnection = $false }
-
-# 2) Hardware info (CIM)
-$cs = Get-CimInstance -ClassName Win32_ComputerSystem
-$Manufacturer = $cs.Manufacturer
-$Model        = $cs.Model
-
-# 3) Flags
+# 0) Defaults (veilig)
 $HPTPM = $false
 $HPBIOS = $false
 $HPIADrivers = $false
 $HPEnterprise = $false
 
-# 4) Laad OSDCloud functions als internet werkt
-if ($InternetConnection) {
+# 1) VM/Hyper-V detectie -> HP-flow overslaan
+$cs = Get-CimInstance -ClassName Win32_ComputerSystem
+$sp = Get-CimInstance -ClassName Win32_ComputerSystemProduct -ErrorAction SilentlyContinue
+$Manufacturer = $cs.Manufacturer
+$Model = $cs.Model
+$vendor = $sp.Vendor
+$product = $sp.Name
+$IsVM = $false
+if ($Manufacturer -match 'Microsoft Corporation' -and $Model -match 'Virtual Machine') { $IsVM = $true }
+if ($vendor -match 'Microsoft Corporation' -and $product -match 'Virtual Machine') { $IsVM = $true }
+
+# 2) Internet check
+$InternetConnection = $false
+try {
+    $resp = Invoke-WebRequest -Uri 'http://www.msftconnecttest.com/connecttest.txt' -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+    if ($resp.StatusCode -eq 200 -and $resp.Content -match 'Microsoft') { $InternetConnection = $true }
+}
+catch { $InternetConnection = $false }
+
+# 3) OSDCloud functions laden (best-effort) + controle op cmdlets
+$FunctionsLoaded = $false
+if ($InternetConnection -and -not $IsVM) {
     try {
         Invoke-Expression -Command (Invoke-RestMethod -Uri 'https://functions.osdcloud.com')
-    } catch {
-        Write-Warning "Kon functions.osdcloud.com niet laden: $($_.Exception.Message)"
+        $FunctionsLoaded = $true
+    }
+    catch {
+        Write-Warning "OSDCloud functions niet geladen: $($_.Exception.Message)"
     }
 }
 
-# 5) HP detectie + enterprise check
-if ($Manufacturer -match 'HP' -or $Manufacturer -match 'Hewlett-Packard') {
-    $Manufacturer = 'HP'
-    if ($InternetConnection) {
-        try { $HPEnterprise = Test-HPIASupport } catch { $HPEnterprise = $false }
+# 4) HP detectie + enterprise check (alleen als geen VM, wel internet, en functions bestaan)
+$HasTestHPIA = ($null -ne (Get-Command Test-HPIASupport -ErrorAction SilentlyContinue))
+if (-not $IsVM -and $InternetConnection -and $FunctionsLoaded -and $HasTestHPIA -and ($Manufacturer -match 'HP|Hewlett-Packard')) {
+    try {
+        $HPEnterprise = Test-HPIASupport
+    }
+    catch {
+        $HPEnterprise = $false
+        Write-Warning "Test-HPIASupport faalde: $($_.Exception.Message)"
     }
 }
 
-# 6) HP Enterprise flow (HPIA/HPCMSL + TPM/BIOS determine)
+# 5) HP Enterprise flow (alleen als echt ondersteund)
 if ($HPEnterprise) {
     try {
+        # deviceshp module dynamisch laden
         Invoke-Expression (Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/OSDeploy/OSD/master/cloud/modules/deviceshp.psm1')
+
+        # HPCMSL installeren
+        if ($null -eq (Get-Command osdcloud-InstallModuleHPCMSL -ErrorAction SilentlyContinue)) {
+            throw "osdcloud-InstallModuleHPCMSL niet beschikbaar."
+        }
         osdcloud-InstallModuleHPCMSL
 
-        $TPM  = osdcloud-HPTPMDetermine
+        # Determine TPM/BIOS (cmdlets checken op bestaan)
+        if ($null -eq (Get-Command osdcloud-HPTPMDetermine -ErrorAction SilentlyContinue)) { throw "osdcloud-HPTPMDetermine niet beschikbaar." }
+        if ($null -eq (Get-Command osdcloud-HPBIOSDetermine -ErrorAction SilentlyContinue)) { throw "osdcloud-HPBIOSDetermine niet beschikbaar." }
+
+        $TPM = osdcloud-HPTPMDetermine
         $BIOS = osdcloud-HPBIOSDetermine
         $HPIADrivers = $true
 
-        if ($TPM) {
-            Write-Host "HP Update TPM Firmware vereist: $TPM (kan interactie vereisen)" -ForegroundColor Yellow
-            $HPTPM = $true
-        }
+        if ($TPM) { Write-Host "HP TPM firmware update vereist: $TPM" -ForegroundColor Yellow; $HPTPM = $true }
 
         if ($BIOS -eq $false) {
-            $CurrentVer = Get-HPBIOSVersion
-            Write-Host "HP System Firmware is al up-to-date: $CurrentVer" -ForegroundColor Green
+            if (Get-Command Get-HPBIOSVersion -ErrorAction SilentlyContinue) {
+                $CurrentVer = Get-HPBIOSVersion
+                Write-Host "HP System Firmware up-to-date: $CurrentVer" -ForegroundColor Green
+            }
+            else {
+                Write-Host "HP System Firmware up-to-date (versiecmdlet niet beschikbaar)" -ForegroundColor Green
+            }
             $HPBIOS = $false
-        } else {
-            $LatestVer  = (Get-HPBIOSUpdates -Latest).ver
-            $CurrentVer = Get-HPBIOSVersion
-            Write-Host "HP System Firmware update van $CurrentVer naar $LatestVer" -ForegroundColor Yellow
+        }
+        else {
+            if (Get-Command Get-HPBIOSUpdates -ErrorAction SilentlyContinue) {
+                $LatestVer = (Get-HPBIOSUpdates -Latest).ver
+                $CurrentVer = (Get-HPBIOSVersion)
+                Write-Host "HP System Firmware update: $CurrentVer -> $LatestVer" -ForegroundColor Yellow
+            }
+            else {
+                Write-Host "HP System Firmware update nodig (details onbekend; cmdlets niet beschikbaar)" -ForegroundColor Yellow
+            }
             $HPBIOS = $true
         }
-    } catch {
-        Write-Warning "HP Enterprise flow faalde: $($_.Exception.Message)"
-        $HPIADrivers = $false
-        $HPTPM = $false
-        $HPBIOS = $false
+    }
+    catch {
+        Write-Warning "HP Enterprise flow overgeslagen door fout: $($_.Exception.Message)"
+        $HPIADrivers = $false; $HPTPM = $false; $HPBIOS = $false
     }
 }
+else {
+    if ($IsVM) { Write-Host "VM gedetecteerd (Hyper-V/virtueel). HP/HPIA wordt overgeslagen." -ForegroundColor DarkYellow }
+    elseif (-not $InternetConnection) { Write-Host "Geen internet in WinPE; HP/HPIA wordt overgeslagen." -ForegroundColor DarkYellow }
+    elseif (-not $FunctionsLoaded) { Write-Host "OSDCloud functions niet geladen; HP/HPIA wordt overgeslagen." -ForegroundColor DarkYellow }
+    elseif (-not $HasTestHPIA) { Write-Host "Test-HPIASupport niet beschikbaar; HP/HPIA wordt overgeslagen." -ForegroundColor DarkYellow }
+    elseif ($Manufacturer -notmatch 'HP|Hewlett-Packard') { Write-Host "Geen HP hardware gedetecteerd; HP/HPIA wordt overgeslagen." -ForegroundColor DarkYellow }
+}
 
-# 7) Voeg HP/feature-flags toe aan jouw MyOSDCloud (zonder overschrijven van eerdere waarden)
-$Global:MyOSDCloud.DevMode              = $true
-$Global:MyOSDCloud.WindowsDefenderUpdate= $true
-$Global:MyOSDCloud.NetFx3               = $true
-$Global:MyOSDCloud.SetTimeZone          = $true
-$Global:MyOSDCloud.HPIADrivers          = [bool]$HPIADrivers
-$Global:MyOSDCloud.Bitlocker            = $true
-$Global:MyOSDCloud.ClearDiskConfirm     = $false
-$Global:MyOSDCloud.OSDCloudUnattend     = $true
-$Global:MyOSDCloud.Restart              = $true
-$Global:MyOSDCloud.HPTPMUpdate          = [bool]$HPTPM
-$Global:MyOSDCloud.HPBIOSUpdate         = [bool]$HPBIOS
+# 6) Schrijf HP-flags terug naar jouw MyOSDCloud (alleen HP-gerelateerd)
+$Global:MyOSDCloud.HPIADrivers = [bool]$HPIADrivers
+$Global:MyOSDCloud.HPTPMUpdate = [bool]$HPTPM
+$Global:MyOSDCloud.HPBIOSUpdate = [bool]$HPBIOS
 
-Write-Host "HP/HPIA -> HPIA:$HPIADrivers  TPM:$HPTPM  BIOS:$HPBIOS  Internet:$InternetConnection" -ForegroundColor Cyan
+Write-Host "HP/HPIA summary -> VM:$IsVM  Internet:$InternetConnection  HPIA:$HPIADrivers  TPM:$HPTPM  BIOS:$HPBIOS" -ForegroundColor Cyan
 
 #=======================================================================
 #   LOCAL DRIVE LETTERS (CIM)
@@ -147,29 +182,32 @@ if (-not $OSDCloudDrive) {
 }
 
 if ($uselocalimage) {
-    $wimRoot  = Join-Path $OSDCloudDrive 'OSDCloud\OS'
+    $wimRoot = Join-Path $OSDCloudDrive 'OSDCloud\OS'
     $wimFiles = Get-ChildItem -Path $wimRoot -Filter "*.wim" -Recurse -File -ErrorAction SilentlyContinue
 
     if (-not $wimFiles -or $wimFiles.Count -eq 0) {
         Write-Warning "Geen WIM-bestanden gevonden in $wimRoot"
         $uselocalimage = $false
-    } else {
+    }
+    else {
         if ($Global:MyOSDCloud.ZTI) {
             $ImageFileItem = $wimFiles | Select-Object -First 1
-        } else {
+        }
+        else {
             $i = 1; $wimFiles | ForEach-Object { Write-Host ("{0}. {1}" -f $i, $_.FullName) -ForegroundColor Yellow; $i++ }
             $selection = Read-Host "`nTyp het nummer van het bestand dat je wilt gebruiken (1-$($wimFiles.Count))"
             if ($selection -as [int] -and $selection -ge 1 -and $selection -le $wimFiles.Count) {
                 $ImageFileItem = $wimFiles[$selection - 1]
-            } else {
+            }
+            else {
                 Write-Warning "Ongeldige selectie; overschakelen op online image."
                 $uselocalimage = $false
             }
         }
 
         if ($ImageFileItem) {
-            $Global:MyOSDCloud.ImageFileItem     = $ImageFileItem
-            $Global:MyOSDCloud.ImageFileName     = $ImageFileItem.Name
+            $Global:MyOSDCloud.ImageFileItem = $ImageFileItem
+            $Global:MyOSDCloud.ImageFileName = $ImageFileItem.Name
             $Global:MyOSDCloud.ImageFileFullName = $ImageFileItem.FullName
 
             $imgInfo = Get-WindowsImage -ImagePath $ImageFileItem.FullName -ErrorAction SilentlyContinue
@@ -191,8 +229,8 @@ Write-Output $Global:MyOSDCloud
 #=======================================================================
 $moduleRoot = Join-Path $Env:ProgramFiles 'WindowsPowerShell\Modules\OSD'
 $ModulePath = Get-ChildItem -Path $moduleRoot -Directory -ErrorAction SilentlyContinue |
-              Sort-Object { [version]($_.Name) } -Descending |
-              Select-Object -First 1 -ExpandProperty FullName
+Sort-Object { [version]($_.Name) } -Descending |
+Select-Object -First 1 -ExpandProperty FullName
 if (-not $ModulePath) { throw "OSD module niet gevonden in $moduleRoot" }
 Import-Module (Join-Path $ModulePath 'OSD.psd1') -Force
 
@@ -202,12 +240,12 @@ Import-Module (Join-Path $ModulePath 'OSD.psd1') -Force
 Write-Host -ForegroundColor Green "Downloading and creating script for OOBE phase"
 New-Item -ItemType Directory -Path 'C:\Windows\Setup\scripts' -Force | Out-Null
 
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1"           | Out-File -FilePath 'C:\Windows\Setup\scripts\Remove-AppX.ps1' -Encoding ascii -Force
-Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin"                                   -OutFile "C:\Windows\Setup\scripts\start2.bin"
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1"            | Out-File -FilePath 'C:\Windows\Setup\scripts\Copy-Start.ps1' -Encoding ascii -Force
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/OSUpdate.ps1"              | Out-File -FilePath 'C:\Windows\Setup\scripts\OSUpdate.ps1' -Encoding ascii -Force
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1"      | Out-File -FilePath 'C:\Windows\Setup\scripts\New-ComputerName.ps1' -Encoding ascii -Force
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-OSUpdateTask.ps1"   | Out-File -FilePath 'C:\Windows\Setup\scripts\Create-OSUpdateTask.ps1' -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Remove-AppX.ps1' -Encoding ascii -Force
+Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin" -OutFile "C:\Windows\Setup\scripts\start2.bin"
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Copy-Start.ps1' -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/OSUpdate.ps1"   | Out-File -FilePath 'C:\Windows\Setup\scripts\OSUpdate.ps1' -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\New-ComputerName.ps1' -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-OSUpdateTask.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Create-OSUpdateTask.ps1' -Encoding ascii -Force
 
 $OOBECMD = @'
 @echo off
@@ -267,8 +305,9 @@ $SetupComplete | Out-File -FilePath 'C:\Windows\Setup\scripts\SetupComplete.cmd'
 Write-Host "Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage"
 if ($uselocalimage -and $Global:MyOSDCloud.ImageFileFullName) {
     Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage `
-                   -ImageFileFullName $Global:MyOSDCloud.ImageFileFullName -OSImageIndex $Global:MyOSDCloud.OSImageIndex
-} else {
+        -ImageFileFullName $Global:MyOSDCloud.ImageFileFullName -OSImageIndex $Global:MyOSDCloud.OSImageIndex
+}
+else {
     Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage
 }
 
