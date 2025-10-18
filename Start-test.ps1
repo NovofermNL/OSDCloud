@@ -35,6 +35,92 @@ $Global:MyOSDCloud = [ordered]@{
 }
 
 #=======================================================================
+#   HP / HPIA / BIOS/TPM integratie (ZTI-proof)
+#=======================================================================
+# 1) Internet check
+$InternetConnection = $false
+try {
+    $resp = Invoke-WebRequest -Uri 'http://www.msftconnecttest.com/connecttest.txt' -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+    if ($resp.StatusCode -eq 200 -and $resp.Content -match 'Microsoft') { $InternetConnection = $true }
+} catch { $InternetConnection = $false }
+
+# 2) Hardware info (CIM)
+$cs = Get-CimInstance -ClassName Win32_ComputerSystem
+$Manufacturer = $cs.Manufacturer
+$Model        = $cs.Model
+
+# 3) Flags
+$HPTPM = $false
+$HPBIOS = $false
+$HPIADrivers = $false
+$HPEnterprise = $false
+
+# 4) Laad OSDCloud functions als internet werkt
+if ($InternetConnection) {
+    try {
+        Invoke-Expression -Command (Invoke-RestMethod -Uri 'https://functions.osdcloud.com')
+    } catch {
+        Write-Warning "Kon functions.osdcloud.com niet laden: $($_.Exception.Message)"
+    }
+}
+
+# 5) HP detectie + enterprise check
+if ($Manufacturer -match 'HP' -or $Manufacturer -match 'Hewlett-Packard') {
+    $Manufacturer = 'HP'
+    if ($InternetConnection) {
+        try { $HPEnterprise = Test-HPIASupport } catch { $HPEnterprise = $false }
+    }
+}
+
+# 6) HP Enterprise flow (HPIA/HPCMSL + TPM/BIOS determine)
+if ($HPEnterprise) {
+    try {
+        Invoke-Expression (Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/OSDeploy/OSD/master/cloud/modules/deviceshp.psm1')
+        osdcloud-InstallModuleHPCMSL
+
+        $TPM  = osdcloud-HPTPMDetermine
+        $BIOS = osdcloud-HPBIOSDetermine
+        $HPIADrivers = $true
+
+        if ($TPM) {
+            Write-Host "HP Update TPM Firmware vereist: $TPM (kan interactie vereisen)" -ForegroundColor Yellow
+            $HPTPM = $true
+        }
+
+        if ($BIOS -eq $false) {
+            $CurrentVer = Get-HPBIOSVersion
+            Write-Host "HP System Firmware is al up-to-date: $CurrentVer" -ForegroundColor Green
+            $HPBIOS = $false
+        } else {
+            $LatestVer  = (Get-HPBIOSUpdates -Latest).ver
+            $CurrentVer = Get-HPBIOSVersion
+            Write-Host "HP System Firmware update van $CurrentVer naar $LatestVer" -ForegroundColor Yellow
+            $HPBIOS = $true
+        }
+    } catch {
+        Write-Warning "HP Enterprise flow faalde: $($_.Exception.Message)"
+        $HPIADrivers = $false
+        $HPTPM = $false
+        $HPBIOS = $false
+    }
+}
+
+# 7) Voeg HP/feature-flags toe aan jouw MyOSDCloud (zonder overschrijven van eerdere waarden)
+$Global:MyOSDCloud.DevMode              = $true
+$Global:MyOSDCloud.WindowsDefenderUpdate= $true
+$Global:MyOSDCloud.NetFx3               = $true
+$Global:MyOSDCloud.SetTimeZone          = $true
+$Global:MyOSDCloud.HPIADrivers          = [bool]$HPIADrivers
+$Global:MyOSDCloud.Bitlocker            = $true
+$Global:MyOSDCloud.ClearDiskConfirm     = $false
+$Global:MyOSDCloud.OSDCloudUnattend     = $true
+$Global:MyOSDCloud.Restart              = $true
+$Global:MyOSDCloud.HPTPMUpdate          = [bool]$HPTPM
+$Global:MyOSDCloud.HPBIOSUpdate         = [bool]$HPBIOS
+
+Write-Host "HP/HPIA -> HPIA:$HPIADrivers  TPM:$HPTPM  BIOS:$HPBIOS  Internet:$InternetConnection" -ForegroundColor Cyan
+
+#=======================================================================
 #   LOCAL DRIVE LETTERS (CIM)
 #=======================================================================
 function Get-WinPEDrive {
@@ -111,19 +197,17 @@ if (-not $ModulePath) { throw "OSD module niet gevonden in $moduleRoot" }
 Import-Module (Join-Path $ModulePath 'OSD.psd1') -Force
 
 #=======================================================================
-#   (Optioneel) Pre-stage OOBE/SetupComplete vóór Start-OSDCloud
-#   Let op: controleer dat C:\ bestaat in jouw flow (zo niet, verplaats dit blok)
+#   Pre-stage OOBE/SetupComplete vóór Start-OSDCloud
 #=======================================================================
 Write-Host -ForegroundColor Green "Downloading and creating script for OOBE phase"
 New-Item -ItemType Directory -Path 'C:\Windows\Setup\scripts' -Force | Out-Null
 
-# Controleer je pad-CASING in GitHub: 'SetupCompleteFIles' moet exact overeenkomen!
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Remove-AppX.ps1' -Encoding ascii -Force
-Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin" -OutFile "C:\Windows\Setup\scripts\start2.bin"
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1"        | Out-File -FilePath 'C:\Windows\Setup\scripts\Copy-Start.ps1' -Encoding ascii -Force
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/OSUpdate.ps1"          | Out-File -FilePath 'C:\Windows\Setup\scripts\OSUpdate.ps1' -Encoding ascii -Force
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1"  | Out-File -FilePath 'C:\Windows\Setup\scripts\New-ComputerName.ps1' -Encoding ascii -Force
-Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-OSUpdateTask.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Create-OSUpdateTask.ps1' -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1"           | Out-File -FilePath 'C:\Windows\Setup\scripts\Remove-AppX.ps1' -Encoding ascii -Force
+Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin"                                   -OutFile "C:\Windows\Setup\scripts\start2.bin"
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1"            | Out-File -FilePath 'C:\Windows\Setup\scripts\Copy-Start.ps1' -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/OSUpdate.ps1"              | Out-File -FilePath 'C:\Windows\Setup\scripts\OSUpdate.ps1' -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1"      | Out-File -FilePath 'C:\Windows\Setup\scripts\New-ComputerName.ps1' -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-OSUpdateTask.ps1"   | Out-File -FilePath 'C:\Windows\Setup\scripts\Create-OSUpdateTask.ps1' -Encoding ascii -Force
 
 $OOBECMD = @'
 @echo off
@@ -171,7 +255,6 @@ start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Set
 
 ::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\New-ComputerName.ps1" >> "%logfile%" 2>&1
 ::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
-
 
 echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
 exit /b 0
