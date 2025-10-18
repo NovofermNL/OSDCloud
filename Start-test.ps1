@@ -31,12 +31,7 @@ $Global:MyOSDCloud = [ordered]@{
     ShutdownSetupComplete = [bool]$false
     SyncMSUpCatDriverUSB  = [bool]$true
     CheckSHA1             = [bool]$true
-    ZTI                   = [bool]$true
-
-    # HP-afhankelijk (initieel false; worden later gezet indien van toepassing)
-    HPIADrivers           = [bool]$false
-    HPTPMUpdate           = [bool]$false
-    HPBIOSUpdate          = [bool]$false
+    ZTI                   = [bool]$false
 }
 
 #=======================================================================
