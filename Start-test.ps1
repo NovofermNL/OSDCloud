@@ -1,10 +1,9 @@
 $ScriptName = 'Installeren Windows 11'
-$ScriptVersion = '24.7.4.4'
 Write-Host -ForegroundColor Green "$ScriptName $ScriptVersion"
 
-# ── Hardening voor webcalls en errors
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$ErrorActionPreference = 'Stop'
+#
+#[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 
 #=======================================================================
 #   OSDCLOUD Definitions
@@ -31,7 +30,7 @@ $Global:MyOSDCloud = [ordered]@{
     ShutdownSetupComplete = [bool]$false
     SyncMSUpCatDriverUSB  = [bool]$true
     CheckSHA1             = [bool]$true
-    ZTI                   = [bool]$false   # zet op $true voor volledig hands-off
+    ZTI                   = [bool]$false
 }
 
 #=======================================================================
