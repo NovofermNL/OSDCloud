@@ -19,8 +19,8 @@ $task.Settings.Enabled = $true
 $task.Settings.AllowDemandStart = $true
 $task.Settings.StartWhenAvailable = $true
 $task.Principal.UserId = "$env:USERNAME"
-$task.Principal.LogonType = 3   # InteractiveToken (User context)
-$task.Principal.RunLevel = 1    # Least privileges (dus niet als admin)
+$task.Principal.LogonType = 3
+$task.Principal.RunLevel = 1
 
 # Trigger: bij logon, zonder vertraging
 $trigger = $task.Triggers.Create(9)  # 9 = LogonTrigger
