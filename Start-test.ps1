@@ -2,8 +2,8 @@ $ScriptName = 'Installeren Windows 11'
 $ScriptVersion = '24.7.4.4'
 Write-Host -ForegroundColor Green "$ScriptName $ScriptVersion"
 
-# Optioneel: Als u Tls12 echt nodig heeft voor oudere WinPE versies, gebruik dan dit:
-# [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+# Nodig in oudere WinPE/PowerShell-omgevingen voor HTTPS-downloads.
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 #=======================================================================
 #   OSDCLOUD Definitions
@@ -17,20 +17,20 @@ $OSLanguage = 'nl-nl'
 #   OSDCLOUD VARS (defaults)
 #=======================================================================
 $Global:MyOSDCloud = [ordered]@{
-    Restart               = [bool]$false
-    RecoveryPartition     = [bool]$false
-    OEMActivation         = [bool]$true
-    WindowsUpdate         = [bool]$false
-    MSCatalogFirmware     = [bool]$false
-    WindowsUpdateDrivers  = [bool]$false
+    Restart               = [bool]$false
+    RecoveryPartition     = [bool]$false
+    OEMActivation         = [bool]$true
+    WindowsUpdate         = [bool]$false
+    MSCatalogFirmware     = [bool]$false
+    WindowsUpdateDrivers  = [bool]$false
     WindowsDefenderUpdate = [bool]$false
-    SetTimeZone           = [bool]$true
-    SkipClearDisk         = [bool]$false
-    ClearDiskConfirm      = [bool]$false
+    SetTimeZone           = [bool]$true
+    SkipClearDisk         = [bool]$false
+    ClearDiskConfirm      = [bool]$false
     ShutdownSetupComplete = [bool]$false
-    SyncMSUpCatDriverUSB  = [bool]$true
-    CheckSHA1             = [bool]$true
-    ZTI                   = [bool]$false
+    SyncMSUpCatDriverUSB  = [bool]$true
+    CheckSHA1             = [bool]$true
+    ZTI                   = [bool]$false
 }
 
 #=======================================================================
@@ -67,17 +67,12 @@ if ($InternetConnection -and -not $IsVM) {
     catch { Write-Warning "OSDCloud functions niet geladen: $($_.Exception.Message)" }
 }
 
-# Bepaal of HP-integratie moet lopen (dit stelt de vlaggen in, OSDCloud doet de actuele uitvoering)
+# Bepaal of HP-integratie moet lopen
 $IsHP = ($Manufacturer -match 'HP|Hewlett-Packard')
 $HasTestHPIA = ($null -ne (Get-Command Test-HPIASupport -ErrorAction SilentlyContinue))
 
 if (-not $IsVM -and $InternetConnection -and $FunctionsLoaded -and $IsHP -and $HasTestHPIA) {
     # Als alle checks slagen, gaan we ervan uit dat HPIA/BIOS/TPM gecheckt en uitgevoerd moeten worden door OSDCloud.
-    
-    # Optioneel: U kunt hier Test-HPIASupport aanroepen om te bepalen of het een 'Enterprise' model is,
-    # maar voor de vlaggen is dit strikt genomen niet nodig - HPIA ondersteunt beide flows.
-    # try { $HPEnterprise = Test-HPIASupport } catch { $HPEnterprise = $false }
-    
     $HPIADrivers = $true
     $HPTPM = $true
     $HPBIOS = $true
@@ -214,7 +209,6 @@ New-Item -ItemType Directory -Path $ScriptPath -Force | Out-Null
 # Bestanden downloaden naar DOEL-OS (let op case: SetupCompleteFiles)
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1" | Out-File -FilePath "$ScriptPath\Remove-AppX.ps1" -Encoding ascii -Force
 Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin" -OutFile "$ScriptPath\start2.bin"
-# FIX: 'c' teken verwijderd uit deze regel:
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1" | Out-File -FilePath "$ScriptPath\Copy-Start.ps1" -Encoding ascii -Force
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/OSUpdate.ps1" | Out-File -FilePath "$ScriptPath\OSUpdate.ps1" -Encoding ascii -Force
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1" | Out-File -FilePath "$ScriptPath\New-ComputerName.ps1" -Encoding ascii -Force
