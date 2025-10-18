@@ -1,0 +1,197 @@
+$ScriptName = 'Installeren Windows 11'
+$ScriptVersion = '24.7.4.4'
+Write-Host -ForegroundColor Green "$ScriptName $ScriptVersion"
+
+# ── Hardening voor webcalls en errors
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$ErrorActionPreference = 'Stop'
+
+#=======================================================================
+#   OSDCLOUD Definitions
+#=======================================================================
+$OSName       = 'Windows 11 24H2 x64'
+$OSEdition    = 'Pro'
+$OSActivation = 'Volume'
+$OSLanguage   = 'nl-nl'
+
+#=======================================================================
+#   OSDCLOUD VARS
+#=======================================================================
+$Global:MyOSDCloud = [ordered]@{
+    Restart               = [bool]$false
+    RecoveryPartition     = [bool]$false
+    OEMActivation         = [bool]$true
+    WindowsUpdate         = [bool]$true
+    MSCatalogFirmware     = [bool]$false
+    WindowsUpdateDrivers  = [bool]$true
+    WindowsDefenderUpdate = [bool]$false
+    SetTimeZone           = [bool]$true
+    SkipClearDisk         = [bool]$false
+    ClearDiskConfirm      = [bool]$false
+    ShutdownSetupComplete = [bool]$false
+    SyncMSUpCatDriverUSB  = [bool]$true
+    CheckSHA1             = [bool]$true
+    ZTI                   = [bool]$true
+}
+
+#=======================================================================
+#   LOCAL DRIVE LETTERS (CIM)
+#=======================================================================
+function Get-WinPEDrive {
+    $d = (Get-CimInstance -ClassName Win32_LogicalDisk | Where-Object VolumeName -eq 'WINPE').DeviceID
+    Write-Host "Current WINPE drive is: $d"
+    return $d
+}
+function Get-OSDCloudDrive {
+    $d = (Get-CimInstance -ClassName Win32_LogicalDisk | Where-Object VolumeName -eq 'OSDCloudUSB').DeviceID
+    Write-Host "Current OSDCLOUD Drive is: $d"
+    return $d
+}
+
+#=======================================================================
+#   OSDCLOUD Image met keuzemenu (ZTI-proof)
+#=======================================================================
+$uselocalimage = $true
+$OSDCloudDrive = Get-OSDCloudDrive
+Write-Host -ForegroundColor Green "UseLocalImage is set to: $uselocalimage"
+
+if (-not $OSDCloudDrive) {
+    Write-Warning "OSDCloudUSB niet gevonden; overschakelen op online image."
+    $uselocalimage = $false
+}
+
+if ($uselocalimage) {
+    $wimRoot  = Join-Path $OSDCloudDrive 'OSDCloud\OS'
+    $wimFiles = Get-ChildItem -Path $wimRoot -Filter "*.wim" -Recurse -File -ErrorAction SilentlyContinue
+
+    if (-not $wimFiles -or $wimFiles.Count -eq 0) {
+        Write-Warning "Geen WIM-bestanden gevonden in $wimRoot"
+        $uselocalimage = $false
+    } else {
+        if ($Global:MyOSDCloud.ZTI) {
+            $ImageFileItem = $wimFiles | Select-Object -First 1
+        } else {
+            $i = 1; $wimFiles | ForEach-Object { Write-Host ("{0}. {1}" -f $i, $_.FullName) -ForegroundColor Yellow; $i++ }
+            $selection = Read-Host "`nTyp het nummer van het bestand dat je wilt gebruiken (1-$($wimFiles.Count))"
+            if ($selection -as [int] -and $selection -ge 1 -and $selection -le $wimFiles.Count) {
+                $ImageFileItem = $wimFiles[$selection - 1]
+            } else {
+                Write-Warning "Ongeldige selectie; overschakelen op online image."
+                $uselocalimage = $false
+            }
+        }
+
+        if ($ImageFileItem) {
+            $Global:MyOSDCloud.ImageFileItem     = $ImageFileItem
+            $Global:MyOSDCloud.ImageFileName     = $ImageFileItem.Name
+            $Global:MyOSDCloud.ImageFileFullName = $ImageFileItem.FullName
+
+            $imgInfo = Get-WindowsImage -ImagePath $ImageFileItem.FullName -ErrorAction SilentlyContinue
+            $Global:MyOSDCloud.OSImageIndex = ($imgInfo | Where-Object { $_.ImageName -match $OSEdition } | Select-Object -First 1).ImageIndex
+            if (-not $Global:MyOSDCloud.OSImageIndex) { $Global:MyOSDCloud.OSImageIndex = 1 }
+
+            Write-Host "`nWIM-bestand gekozen: $($ImageFileItem.Name) [Index $($Global:MyOSDCloud.OSImageIndex)]" -ForegroundColor Green
+        }
+    }
+}
+
+#=======================================================================
+#   Write OSDCloud VARS to Console
+#=======================================================================
+Write-Output $Global:MyOSDCloud
+
+#=======================================================================
+#   Update OSDCloud modules (pak hoogste versie)
+#=======================================================================
+$moduleRoot = Join-Path $Env:ProgramFiles 'WindowsPowerShell\Modules\OSD'
+$ModulePath = Get-ChildItem -Path $moduleRoot -Directory -ErrorAction SilentlyContinue |
+              Sort-Object { [version]($_.Name) } -Descending |
+              Select-Object -First 1 -ExpandProperty FullName
+if (-not $ModulePath) { throw "OSD module niet gevonden in $moduleRoot" }
+Import-Module (Join-Path $ModulePath 'OSD.psd1') -Force
+
+#=======================================================================
+#   (Optioneel) Pre-stage OOBE/SetupComplete vóór Start-OSDCloud
+#   Let op: controleer dat C:\ bestaat in jouw flow (zo niet, verplaats dit blok)
+#=======================================================================
+Write-Host -ForegroundColor Green "Downloading and creating script for OOBE phase"
+New-Item -ItemType Directory -Path 'C:\Windows\Setup\scripts' -Force | Out-Null
+
+# Controleer je pad-CASING in GitHub: 'SetupCompleteFIles' moet exact overeenkomen!
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Remove-AppX.ps1' -Encoding ascii -Force
+Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin" -OutFile "C:\Windows\Setup\scripts\start2.bin"
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1"        | Out-File -FilePath 'C:\Windows\Setup\scripts\Copy-Start.ps1' -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/OSUpdate.ps1"          | Out-File -FilePath 'C:\Windows\Setup\scripts\OSUpdate.ps1' -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1"  | Out-File -FilePath 'C:\Windows\Setup\scripts\New-ComputerName.ps1' -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-OSUpdateTask.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Create-OSUpdateTask.ps1' -Encoding ascii -Force
+
+$OOBECMD = @'
+@echo off
+:: OOBE fase verwijder standaard apps en wijzig start-menu
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File C:\Windows\Setup\scripts\Remove-AppX.ps1
+::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File C:\Windows\Setup\scripts\Copy-Start.ps1
+'@
+$OOBECMD | Out-File -FilePath 'C:\Windows\Setup\scripts\oobe.cmd' -Encoding ascii -Force
+
+$SetupComplete = @'
+@echo off
+for /f %%a in ('powershell -NoProfile -Command "(Get-Date).ToString('yyyy-MM-dd-HHmmss')"') do set logname=%%a-Cleanup-Script.log
+set logfolder=C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\OSD
+set logfile=%logfolder%\%logname%
+if not exist "%logfolder%" mkdir "%logfolder%"
+C:
+
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\USB" /v DisableSelectiveSuspend /t REG_DWORD /d 1 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests /t REG_DWORD /d 0 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v SearchOnTaskbarMode /t REG_DWORD /d 0 /f
+reg add "HKEY_USERS\.DEFAULT\Control Panel\Desktop" /v AutoEndTasks /t REG_SZ /d 1 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v DisableCloudOptimizedContent /t REG_DWORD /d 1 /f
+reg add "HKLM\Software\Policies\Microsoft\SQMClient\Windows" /v CEIPEnable /t REG_DWORD /d 0 /f
+reg add "HKLM\SOFTWARE\Microsoft\Office\16.0\Outlook\AutoDiscover" /v ExcludeHttpsRootDomain /t REG_DWORD /d 1 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v HideRecommendedSection /t REG_DWORD /d 1 /f
+reg add "HKU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f
+
+echo === Start Cleanup %date% %time% === >> "%logfile%"
+if exist "C:\Windows\Temp" copy /Y "C:\Windows\Temp\*.log" "%logfolder%" >> "%logfile%" 2>&1
+if exist "C:\Temp"         copy /Y "C:\Temp\*.log"         "%logfolder%" >> "%logfile%" 2>&1
+if exist "C:\OSDCloud\Logs" copy /Y "C:\OSDCloud\Logs\*.log" "%logfolder%" >> "%logfile%" 2>&1
+if exist "C:\ProgramData\OSDeploy" copy /Y "C:\ProgramData\OSDeploy\*.log" "%logfolder%" >> "%logfile%" 2>&1
+
+for %%D in ("C:\OSDCloud" "C:\Drivers" "C:\Intel" "C:\ProgramData\OSDeploy") do (
+    if exist %%D (
+        echo Removing folder %%D >> "%logfile%"
+        rmdir /S /Q %%D >> "%logfile%" 2>&1
+    )
+)
+
+echo Starten van Copy-Start.ps1 >> "%logfile%"
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\Copy-Start.ps1" >> "%logfile%" 2>&1
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\Create-OSUpdateTask.ps1" >> "%logfile%" 2>&1
+
+::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\New-ComputerName.ps1" >> "%logfile%" 2>&1
+::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
+
+
+echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
+exit /b 0
+'@
+$SetupComplete | Out-File -FilePath 'C:\Windows\Setup\scripts\SetupComplete.cmd' -Encoding ascii -Force
+
+#=======================================================================
+#   Start OSDCloud installation (na staging)
+#=======================================================================
+Write-Host "Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage"
+if ($uselocalimage -and $Global:MyOSDCloud.ImageFileFullName) {
+    Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage `
+                   -ImageFileFullName $Global:MyOSDCloud.ImageFileFullName -OSImageIndex $Global:MyOSDCloud.OSImageIndex
+} else {
+    Start-OSDCloud -OSName $OSName -OSEdition $OSEdition -OSActivation $OSActivation -OSLanguage $OSLanguage
+}
+
+Write-Host "OSDCloud Process Complete, Running Custom Actions From Script Before Reboot" -ForegroundColor Green
+
+# Herstart na 20 seconden (alleen als je zeker weet dat er nog niet gereboot is)
+Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
+Start-Sleep -Seconds 20
+wpeutil reboot
