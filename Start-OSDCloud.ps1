@@ -28,7 +28,7 @@ $Global:MyOSDCloud = [ordered]@{
     ShutdownSetupComplete = [bool]$false
     SyncMSUpCatDriverUSB  = [bool]$true
     CheckSHA1             = [bool]$true
-    ZTI                   = [bool]$true
+    ZTI                   = [bool]$false
 }
 
 #=======================================================================
@@ -144,6 +144,7 @@ Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Se
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFIles/New-ComputerName.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\New-ComputerName.ps1' -Encoding ascii -Force
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFIles/Create-OSUpdateTask.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Create-OSUpdateTask.ps1' -Encoding ascii -Force
 
+
 #Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/Public/main/Prod/OSDCloud/Custom-Tweaks.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Custom-Tweaks.ps1' -Encoding ascii -Force
 
 #Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/Public/main/Dev/OSD-CleanUp.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\OSD-CleanUp.ps1' -Encoding ascii -Force
@@ -178,6 +179,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v DisableCloudO
 reg add "HKLM\Software\Policies\Microsoft\SQMClient\Windows" /v CEIPEnable /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\Microsoft\Office\16.0\Outlook\AutoDiscover" /v ExcludeHttpsRootDomain /t REG_DWORD /d 1 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v HideRecommendedSection /t REG_DWORD /d 1 /f
+reg add "HKU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f
 
 :: Cleanup logs en folders
 echo === Start Cleanup %date% %time% === >> "%logfile%"
@@ -209,9 +211,13 @@ for %%D in (
 :: Start copy-start script
 echo Starten van Copy-Start.ps1 >> "%logfile%"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\Copy-Start.ps1" >> "%logfile%" 2>&1
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\Create-OSUpdateTask.ps1" >> "%logfile%" 2>&1
+
 ::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\New-ComputerName.ps1" >> "%logfile%" 2>&1
 ::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
 ::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\Create-ScheduledTask.ps1" >> "%logfile%" 2>&1
+
+
 
 echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
 
