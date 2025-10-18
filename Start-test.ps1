@@ -2,7 +2,7 @@ $ScriptName = 'Installeren Windows 11'
 $ScriptVersion = '24.7.4.4'
 Write-Host -ForegroundColor Green "$ScriptName $ScriptVersion"
 
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+#[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 #=======================================================================
 #   OSDCLOUD Definitions
@@ -35,7 +35,7 @@ $Global:MyOSDCloud = [ordered]@{
 #=======================================================================
 #   HP / HPIA / BIOS/TPM integratie (Hyper-V safe, ZTI-proof)
 #=======================================================================
-$HPTPM = $true; $HPBIOS = $false; $HPIADrivers = $true; $HPEnterprise = $false
+$HPTPM = $false; $HPBIOS = $false; $HPIADrivers = $false; $HPEnterprise = $false
 
 # VM-detectie
 $cs = Get-CimInstance -ClassName Win32_ComputerSystem
