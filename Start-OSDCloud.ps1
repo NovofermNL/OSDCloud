@@ -167,21 +167,32 @@ set logfile=%logfolder%\%logname%
 :: Zorg dat logmap bestaat
 if not exist "%logfolder%" mkdir "%logfolder%"
 
-:: Zet drive naar C: 
+:: Zet drive naar C:
 C:
 
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\USB" /v DisableSelectiveSuspend /t REG_DWORD /d 1 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests /t REG_DWORD /d 0 /f
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v SearchOnTaskbarMode /t REG_DWORD /d 0 /f
-reg add "HKEY_USERS\.DEFAULT\Control Panel\Desktop" /v AutoEndTasks /t REG_SZ /d 1 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v DisableCloudOptimizedContent /t REG_DWORD /d 1 /f
 reg add "HKLM\Software\Policies\Microsoft\SQMClient\Windows" /v CEIPEnable /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\Microsoft\Office\16.0\Outlook\AutoDiscover" /v ExcludeHttpsRootDomain /t REG_DWORD /d 1 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v HideRecommendedSection /t REG_DWORD /d 1 /f
-reg add "HKU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f
 
-:: Cleanup logs en folders
+:: (Optioneel) .DEFAULT is het systeem/logonscherm; laat staan of verwijder naar wens
+reg add "HKEY_USERS\.DEFAULT\Control Panel\Desktop" /v AutoEndTasks /t REG_SZ /d 1 /f
+
+:: ===== DEFAULT USER-PROFIEL (voor alle toekomstige gebruikers) =====
+echo === Default user tweaks laden %date% %time% === >> "%logfile%"
+reg load HKU\DefUser "C:\Users\Default\NTUSER.DAT" >> "%logfile%" 2>&1
+
+reg add "HKU\DefUser\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f >> "%logfile%" 2>&1
+reg add "HKU\DefUser\Control Panel\Desktop" /v AutoEndTasks /t REG_SZ /d 1 /f >> "%logfile%" 2>&1
+reg unload HKU\DefUser >> "%logfile%" 2>&1
+
+echo === Default user tweaks klaar %date% %time% === >> "%logfile%"
+
+:: ===== Cleanup logs en folders =====
 echo === Start Cleanup %date% %time% === >> "%logfile%"
 if exist "C:\Windows\Temp" (
     copy /Y "C:\Windows\Temp\*.log" "%logfolder%" >> "%logfile%" 2>&1
@@ -208,16 +219,16 @@ for %%D in (
     )
 )
 
-:: Start copy-start script
+:: ===== Post-install acties =====
 echo Starten van Copy-Start.ps1 >> "%logfile%"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\Copy-Start.ps1" >> "%logfile%" 2>&1
+
+echo Starten van Create-OSUpdateTask.ps1 >> "%logfile%"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\Create-OSUpdateTask.ps1" >> "%logfile%" 2>&1
 
 ::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\New-ComputerName.ps1" >> "%logfile%" 2>&1
 ::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
 ::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\scripts\Create-ScheduledTask.ps1" >> "%logfile%" 2>&1
-
-
 
 echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
 
