@@ -1,24 +1,36 @@
+# TLS 1.2 afdwingen (PS 5.1)
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 Write-Host "[+] Function 'Install-VCRedistributables'"
 
 function Install-VCRedistributables {
     <#
     .SYNOPSIS
     Installeert Microsoft Visual C++ Redistributables (2005 t/m 2022).
+
     .DESCRIPTION
-    Installeert alles via Winget. 2015–2022 bevat 2015/2017/2019/2022.
+    Installeert alle relevante Visual C++ Redistributables via Winget.
+    Let op: het pakket "2015-2022" bevat 2015/2017/2019/2022 in één bundle.
+
     .EXAMPLE
     Install-VCRedistributables -Verbose
     #>
 
     [CmdletBinding()]
     param(
-        [switch]$Include2005 = $true,
-        [switch]$Include2008 = $true,
-        [switch]$Include2010 = $true,
-        [switch]$Include2012 = $true,
-        [switch]$Include2013 = $true,
+        [switch]$Include2005     = $true,
+        [switch]$Include2008     = $true,
+        [switch]$Include2010     = $true,
+        [switch]$Include2012     = $true,
+        [switch]$Include2013     = $true,
         [switch]$Include2015Plus = $true
     )
+
+    # Controleer of winget beschikbaar is
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Error "Winget is niet gevonden. Installeer App Installer (Winget) en probeer opnieuw."
+        return
+    }
 
     $apps = @()
 
@@ -53,9 +65,10 @@ function Install-VCRedistributables {
         )
     }
     if ($Include2015Plus) {
+        # Gebruik ASCII/min-streepje i.p.v. en-dash om encoding-issues in PS 5.1 te voorkomen
         $apps += @(
-            @{ Id = "Microsoft.VCRedist.2015+.x64"; Name = "VC++ 2015–2022 x64" },
-            @{ Id = "Microsoft.VCRedist.2015+.x86"; Name = "VC++ 2015–2022 x86" }
+            @{ Id = "Microsoft.VCRedist.2015+.x64"; Name = "VC++ 2015-2022 x64" },
+            @{ Id = "Microsoft.VCRedist.2015+.x86"; Name = "VC++ 2015-2022 x86" }
         )
     }
 
@@ -71,5 +84,5 @@ function Install-VCRedistributables {
     }
 
     Write-Host
-    Write-Output "Alle geselecteerde Visual C++ Redistributables zijn geïnstalleerd."
+    Write-Output "Alle geselecteerde Microsoft Visual C++ Redistributables zijn geïnstalleerd."
 }
