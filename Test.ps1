@@ -1,3 +1,5 @@
+kun je hem even checken op fouten 
+
 #################################################################
 #   [PreOS] Update Module
 #################################################################
@@ -24,8 +26,9 @@ Start-OSDCloud @Params
 
 
 #################################################################
-#   Download Files
+Write-SectionHeader "Download Script files"
 #################################################################
+
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Remove-AppX.ps1' -Encoding ascii -Force
 Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin" -OutFile "C:\Windows\Setup\scripts\start2.bin"
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1" | Out-File -FilePath 'C:\Windows\Setup\scripts\Copy-Start.ps1' -Encoding ascii -Force
