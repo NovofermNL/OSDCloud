@@ -1,3 +1,5 @@
+Write-Host "[+] function Set-NLDutchKeyboardLayout"
+
 function Set-NLDutchKeyboardLayout {
     <#
     .SYNOPSIS
