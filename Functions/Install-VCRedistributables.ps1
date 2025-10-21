@@ -3,48 +3,24 @@ Write-Host "[+] Function Install-VCRedistributables"
 function Install-VCRedistributables {
     <#
     .SYNOPSIS
-    Installeert alle Visual C++ Redistributables (2005 t/m 2015+).
+    Installeert Microsoft Visual C++ Redistributables (2005 t/m 2022).
 
     .DESCRIPTION
-    Deze functie installeert alle gangbare Microsoft Visual C++ Redistributables 
-    via Winget (en Chocolatey voor 2017). 
-    De functie accepteert optioneel parameters voor logging of specifieke jaren.
-
-    .PARAMETER Include2005
-    Installeert de 2005 Redistributables.
-
-    .PARAMETER Include2008
-    Installeert de 2008 Redistributables.
-
-    .PARAMETER Include2010
-    Installeert de 2010 Redistributables.
-
-    .PARAMETER Include2012
-    Installeert de 2012 Redistributables.
-
-    .PARAMETER Include2013
-    Installeert de 2013 Redistributables.
-
-    .PARAMETER Include2015Plus
-    Installeert de 2015-2022 Redistributables.
-
-    .PARAMETER Include2017
-    Installeert de 2017 Redistributables via Chocolatey.
+    Installeert alle relevante Visual C++ Redistributables via Winget.
+    VC++ 2015–2022 bevat 2015, 2017, 2019 en 2022 in één pakket.
 
     .EXAMPLE
-    Install-VCRedistributables
-    # Installeert alle redistributables (2005–2017).
+    Install-VCRedistributables -Verbose
     #>
 
     [CmdletBinding()]
     param(
-        [switch]$Include2005 = $true,
-        [switch]$Include2008 = $true,
-        [switch]$Include2010 = $true,
-        [switch]$Include2012 = $true,
-        [switch]$Include2013 = $true,
-        [switch]$Include2015Plus = $true,
-        [switch]$Include2017 = $true
+        [switch]$Include2005     = $true,
+        [switch]$Include2008     = $true,
+        [switch]$Include2010     = $true,
+        [switch]$Include2012     = $true,
+        [switch]$Include2013     = $true,
+        [switch]$Include2015Plus = $true
     )
 
     $apps = @()
@@ -94,17 +70,6 @@ function Install-VCRedistributables {
         }
         catch {
             Write-Warning "Fout bij installatie van $($app.Name): $_"
-        }
-    }
-
-    if ($Include2017) {
-        Write-Host
-        Write-Verbose "Installing VC++ 2017 (via Chocolatey)..." -Verbose
-        try {
-            choco install vcredist2017 -y
-        }
-        catch {
-            Write-Warning "Fout bij installatie van VC++ 2017: $_"
         }
     }
 
