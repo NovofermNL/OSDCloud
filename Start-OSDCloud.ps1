@@ -179,10 +179,7 @@ reg add "HKLM\Software\Policies\Microsoft\SQMClient\Windows" /v CEIPEnable /t RE
 reg add "HKLM\SOFTWARE\Microsoft\Office\16.0\Outlook\AutoDiscover" /v ExcludeHttpsRootDomain /t REG_DWORD /d 1 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v HideRecommendedSection /t REG_DWORD /d 1 /f
 
-:: (Optioneel) .DEFAULT is het systeem/logonscherm; laat staan of verwijder naar wens
-reg add "HKEY_USERS\.DEFAULT\Control Panel\Desktop" /v AutoEndTasks /t REG_SZ /d 1 /f
-
-:: ===== DEFAULT USER-PROFIEL (voor alle toekomstige gebruikers) =====
+:: ===== DEFAULT USER-PROFIEL =====
 echo === Default user tweaks laden %date% %time% === >> "%logfile%"
 reg load HKU\DefUser "C:\Users\Default\NTUSER.DAT" >> "%logfile%" 2>&1
 
