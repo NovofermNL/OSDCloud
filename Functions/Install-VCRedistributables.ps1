@@ -1,3 +1,5 @@
+Write-Host "[+] Function Install-VCRedistributables"
+
 function Install-VCRedistributables {
     <#
     .SYNOPSIS
