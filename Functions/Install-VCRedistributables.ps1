@@ -12,11 +12,11 @@ function Install-VCRedistributables {
 
     [CmdletBinding()]
     param(
-        [switch]$Include2005     = $true,
-        [switch]$Include2008     = $true,
-        [switch]$Include2010     = $true,
-        [switch]$Include2012     = $true,
-        [switch]$Include2013     = $true,
+        [switch]$Include2005 = $true,
+        [switch]$Include2008 = $true,
+        [switch]$Include2010 = $true,
+        [switch]$Include2012 = $true,
+        [switch]$Include2013 = $true,
         [switch]$Include2015Plus = $true
     )
 
@@ -64,7 +64,8 @@ function Install-VCRedistributables {
         Write-Verbose "Installing $($app.Name)..." -Verbose
         try {
             winget install --id $($app.Id) --exact --accept-source-agreements --accept-package-agreements --force
-        } catch {
+        }
+        catch {
             Write-Warning "Fout bij installatie van $($app.Name): $_"
         }
     }
