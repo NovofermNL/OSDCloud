@@ -1,14 +1,11 @@
-Write-Host "[+] Function Install-VCRedistributables"
+Write-Host "[+] Function 'Install-VCRedistributables'"
 
 function Install-VCRedistributables {
     <#
     .SYNOPSIS
     Installeert Microsoft Visual C++ Redistributables (2005 t/m 2022).
-
     .DESCRIPTION
-    Installeert alle relevante Visual C++ Redistributables via Winget.
-    VC++ 2015–2022 bevat 2015, 2017, 2019 en 2022 in één pakket.
-
+    Installeert alles via Winget. 2015–2022 bevat 2015/2017/2019/2022.
     .EXAMPLE
     Install-VCRedistributables -Verbose
     #>
@@ -67,8 +64,7 @@ function Install-VCRedistributables {
         Write-Verbose "Installing $($app.Name)..." -Verbose
         try {
             winget install --id $($app.Id) --exact --accept-source-agreements --accept-package-agreements --force
-        }
-        catch {
+        } catch {
             Write-Warning "Fout bij installatie van $($app.Name): $_"
         }
     }
