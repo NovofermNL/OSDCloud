@@ -98,20 +98,19 @@ if (-not (Test-Path $Panther)) {
 #################################################################
 #   Global:MyOSDCloud
 #################################################################
-$Global:MyOSDCloud = [ordered]@{
-    Restart               = [bool]$False
-    RecoveryPartition     = [bool]$true
-    OEMActivation         = [bool]$True
-    WindowsUpdate         = [bool]$false
-    WindowsUpdateDrivers  = [bool]$false
-    WindowsDefenderUpdate = [bool]$false
-    SetTimeZone           = [bool]$true
-    ClearDiskConfirm      = [bool]$False
-    ShutdownSetupComplete = [bool]$false
-    SyncMSUpCatDriverUSB  = [bool]$true
-    CheckSHA1             = [bool]$true
-}
-
+$Global:MyOSDCloud = [pscustomobject]([ordered]@{
+    Restart               = $false
+    RecoveryPartition     = $true
+    OEMActivation         = $true
+    WindowsUpdate         = $false
+    WindowsUpdateDrivers  = $false
+    WindowsDefenderUpdate = $false
+    SetTimeZone           = $true
+    ClearDiskConfirm      = $false
+    ShutdownSetupComplete = $false
+    SyncMSUpCatDriverUSB  = $true
+    CheckSHA1             = $true
+})
 #################################################################
 #   HP Functies
 #################################################################
