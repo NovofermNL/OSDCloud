@@ -1,7 +1,7 @@
 # TLS 1.2 afdwingen (PS 5.1)
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-Write-Host "[+] Function 'Install-VCRedistributables'"
+Write-Host "[+] Function Install-VCRedistributables"
 
 function Install-VCRedistributables {
     <#
