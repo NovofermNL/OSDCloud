@@ -1,24 +1,24 @@
 # --- Novoferm Functions Bootstrap v8 (Index + Tree API + ZIP fallback) ---
 [CmdletBinding()]
 param(
-    [string]$Owner  = 'NovofermNL',
-    [string]$Repo   = 'OSDCloud',
-    [string]$Branch = 'main'  # of specifieke SHA voor pinning
+    [string]$Owner = 'NovofermNL',
+    [string]$Repo = 'OSDCloud',
+    [string]$Branch = 'main'
 )
 
 # TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 # ===== Consts =====
-$LogFile   = Join-Path $env:SystemRoot 'Temp\OSDCloud-Functions.log'
+$LogFile = Join-Path $env:SystemRoot 'Temp\OSDCloud-Functions.log'
 $LocalRoot = Join-Path $env:TEMP 'Novoferm-Functions'
-$Headers   = @{ 'User-Agent' = 'PowerShell'; 'Accept' = 'application/vnd.github+json' }
+$Headers = @{ 'User-Agent' = 'PowerShell'; 'Accept' = 'application/vnd.github+json' }
 
 # Raw/Tree/Zip endpoints
-$RawBase     = "https://raw.githubusercontent.com/$Owner/$Repo/$Branch"
-$IndexUrl    = "$RawBase/Functions/FunctionsIndex.txt"
-$TreeApiUrl  = "https://api.github.com/repos/$Owner/$Repo/git/trees/$Branch?recursive=1"
-$ZipUrl      = "https://codeload.github.com/$Owner/$Repo/zip/refs/heads/$Branch"
+$RawBase = "https://raw.githubusercontent.com/$Owner/$Repo/$Branch"
+$IndexUrl = "$RawBase/Functions/FunctionsIndex.txt"
+$TreeApiUrl = "https://api.github.com/repos/$Owner/$Repo/git/trees/$Branch?recursive=1"
+$ZipUrl = "https://codeload.github.com/$Owner/$Repo/zip/refs/heads/$Branch"
 
 # ===== Helpers =====
 function Write-Log {
@@ -42,15 +42,17 @@ function Invoke-WebRequestSafe {
         if ($PSBoundParameters.ContainsKey('OutFile')) {
             Invoke-WebRequest -Uri $Uri -Headers $Headers -UseBasicParsing -OutFile $OutFile -ErrorAction Stop
             return @{ Ok = $true; Status = 200 }
-        } else {
+        }
+        else {
             $r = Invoke-WebRequest -Uri $Uri -Headers $Headers -UseBasicParsing -ErrorAction Stop
             return @{ Ok = $true; Status = $r.StatusCode; Response = $r }
         }
-    } catch {
+    }
+    catch {
         $status = $null; $desc = $null
         if ($_.Exception.Response) {
             $status = [int]$_.Exception.Response.StatusCode
-            $desc   = $_.Exception.Response.StatusDescription
+            $desc = $_.Exception.Response.StatusDescription
         }
         Write-Log ("WEB-ERROR {0} {1}: {2} [{3}]" -f $status, $desc, $_.Exception.Message, $Uri)
         return @{ Ok = $false; Status = $status; Error = $_.Exception.Message }
@@ -70,7 +72,8 @@ Write-Log ("Start bootstrap voor {0}/{1}@{2}" -f $Owner, $Repo, $Branch)
 try {
     Ensure-Dir -Path $LocalRoot
     Write-Log ("Lokale map: {0}" -f $LocalRoot)
-} catch {
+}
+catch {
     Write-Log ("FATALE FOUT: Kan lokale map niet maken. {0}" -f $_.Exception.Message)
     throw "Kan lokale map niet maken."
 }
@@ -85,7 +88,8 @@ if ($idx.Ok) {
     $idxHead = (Get-Content -Path $LocalIndex -TotalCount 5) -join "`n" 
     if (Is-HtmlContent -Text $idxHead) {
         Write-Log "Index is HTML (redirect/blocked). Ga naar Tree API fallback."
-    } else {
+    }
+    else {
         try {
             $lines = (Get-Content $LocalIndex -Raw -Encoding UTF8) -split "\r?\n"
             foreach ($l in $lines) {
@@ -97,19 +101,22 @@ if ($idx.Ok) {
                     $url = $url -replace '/blob/', '/'
                     # Alleen .ps1
                     if ($url -like '*.ps1') { $RawUrls += $url }
-                } else {
+                }
+                else {
                     # Relative pad
-                    $rel = $line -replace '^[./\\]+',''
+                    $rel = $line -replace '^[./\\]+', ''
                     if ($rel -like '*.ps1') { $RawUrls += ("{0}/Functions/{1}" -f $RawBase, $rel) }
                 }
             }
             Write-Log ("Index parsed: {0} items." -f $RawUrls.Count)
-        } catch {
+        }
+        catch {
             Write-Log ("Index leesfout, ga naar Tree API fallback. {0}" -f $_.Exception.Message)
             $RawUrls = @()
         }
     }
-} else {
+}
+else {
     Write-Log "Index download niet gelukt, ga naar Tree API fallback."
 }
 
@@ -118,7 +125,8 @@ if (-not $RawUrls -or $RawUrls.Count -eq 0) {
     Write-Log ("Ophalen tree via API: {0}" -f $TreeApiUrl)
     try {
         $tree = Invoke-RestMethod -Uri $TreeApiUrl -Headers $Headers -ErrorAction Stop
-    } catch {
+    }
+    catch {
         Write-Log ("Tree API mislukt: {0}" -f $_.Exception.Message)
         $tree = $null
     }
@@ -132,7 +140,8 @@ if (-not $RawUrls -or $RawUrls.Count -eq 0) {
             $RawUrls += ("{0}/{1}" -f $RawBase, $n.path)
         }
         Write-Log ("Tree API items: {0}" -f $RawUrls.Count)
-    } else {
+    }
+    else {
         Write-Log "Geen tree-gegevens ontvangen of leeg. Ga naar ZIP fallback."
     }
 }
@@ -170,13 +179,16 @@ if (-not $RawUrls -or $RawUrls.Count -eq 0) {
                 }
                 Write-Log "Bootstrap voltooid via ZIP fallback."
                 return
-            } else {
+            }
+            else {
                 Write-Log "Kon Functions-map niet vinden in ZIP."
             }
-        } catch {
+        }
+        catch {
             Write-Log ("ZIP fallback fout: {0}" -f $_.Exception.Message)
         }
-    } else {
+    }
+    else {
         Write-Log "ZIP download mislukt."
     }
 }
@@ -192,8 +204,8 @@ Write-Log ("Te laden items:`n{0}" -f ($RawUrls -join "`n"))
 $Loaded = @()
 foreach ($src in $RawUrls) {
     try {
-        $uri  = [uri]$src
-        $rel  = $uri.AbsolutePath -replace '^/',''
+        $uri = [uri]$src
+        $rel = $uri.AbsolutePath -replace '^/', ''
         # Neem alleen het stuk na .../{branch}/
         $m = [regex]::Match($rel, '^[^/]+/[^/]+/[^/]+/(.+)$')
         if ($m.Success) { $rel = $m.Groups[1].Value } # bv. Functions/Sub/X.ps1
@@ -222,7 +234,8 @@ foreach ($src in $RawUrls) {
         . $dst
         $Loaded += $rel
         Write-Log ("Loaded: {0}" -f $rel)
-    } catch {
+    }
+    catch {
         Write-Log ("FOUT bij {0}: {1}" -f $src, $_.Exception.Message)
         throw "Kon functie van '$src' niet downloaden of laden."
     }
