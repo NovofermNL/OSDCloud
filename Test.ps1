@@ -39,17 +39,17 @@ if (-not (Test-Path $Panther)) {
 #   Global:MyOSDCloud
 #################################################################
 $Global:MyOSDCloud = [ordered]@{
-    Restart = [bool]$False
-    RecoveryPartition = [bool]$true
-    OEMActivation = [bool]$True
-    WindowsUpdate = [bool]$true
-    WindowsUpdateDrivers = [bool]$true
+    Restart               = [bool]$False
+    RecoveryPartition     = [bool]$true
+    OEMActivation         = [bool]$True
+    WindowsUpdate         = [bool]$true
+    WindowsUpdateDrivers  = [bool]$true
     WindowsDefenderUpdate = [bool]$true
-    SetTimeZone = [bool]$true
-    ClearDiskConfirm = [bool]$False
+    SetTimeZone           = [bool]$true
+    ClearDiskConfirm      = [bool]$False
     ShutdownSetupComplete = [bool]$false
-    SyncMSUpCatDriverUSB = [bool]$true
-    CheckSHA1 = [bool]$true
+    SyncMSUpCatDriverUSB  = [bool]$true
+    CheckSHA1             = [bool]$true
 }
 
 #################################################################
@@ -63,43 +63,42 @@ Write-Host -ForegroundColor Green "[+] Function Install-HPIA"
 Write-Host -ForegroundColor Green "[+] Function Run-HPIA"
 Write-Host -ForegroundColor Green "[+] Function Get-HPIAXMLResult"
 Write-Host -ForegroundColor Green "[+] Function Get-HPIAJSONResult"
-iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/HPIA/HPIA-Functions.ps1)
+Invoke-Expression (Invoke-RestMethod https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/HPIA/HPIA-Functions.ps1)
 
 #HP CMSL WinPE replacement
 Write-Host -ForegroundColor Green "[+] Function Get-HPOSSupport"
 Write-Host -ForegroundColor Green "[+] Function Get-HPSoftpaqListLatest"
 Write-Host -ForegroundColor Green "[+] Function Get-HPSoftpaqItems"
 Write-Host -ForegroundColor Green "[+] Function Get-HPDriverPackLatest"
-iex (irm https://raw.githubusercontent.com/OSDeploy/OSD/master/Public/OSDCloudTS/Test-HPIASupport.ps1)
+Invoke-Expression (Invoke-RestMethod https://raw.githubusercontent.com/OSDeploy/OSD/master/Public/OSDCloudTS/Test-HPIASupport.ps1)
 
 #Install-ModuleHPCMSL
 Write-Host -ForegroundColor Green "[+] Function Install-ModuleHPCMSL"
-iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/EMPS/Install-ModuleHPCMSL.ps1)
+Invoke-Expression (Invoke-RestMethod https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/EMPS/Install-ModuleHPCMSL.ps1)
 
 Write-Host -ForegroundColor Green "[+] Function Invoke-HPAnalyzer"
 Write-Host -ForegroundColor Green "[+] Function Invoke-HPDriverUpdate"
-iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/EMPS/Invoke-HPDriverUpdate.ps1)
+Invoke-Expression (Invoke-RestMethod https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/EMPS/Invoke-HPDriverUpdate.ps1)
 
 #Enable HPIA | Update HP BIOS | Update HP TPM 
-if (Test-HPIASupport){
+if (Test-HPIASupport) {
     Write-SectionHeader -Message "Detected HP Device, Enabling HPIA, HP BIOS and HP TPM Updates"
     $Global:MyOSDCloud.DevMode = [bool]$true
     $Global:MyOSDCloud.HPTPMUpdate = [bool]$true
 	
     $Global:MyOSDCloud.HPIAALL = [bool]$false
-	$Global:MyOSDCloud.HPIADrivers = [bool]$true
+    $Global:MyOSDCloud.HPIADrivers = [bool]$true
     $Global:MyOSDCloud.HPIASoftware = [bool]$false
     $Global:MyOSDCloud.HPIAFirmware = [bool]$true	
     $Global:MyOSDCloud.HPBIOSUpdate = [bool]$true
     $Global:MyOSDCloud.HPBIOSWinUpdate = [bool]$false   
     
-	write-host "Setting DriverPackName to 'None'"
+    write-host "Setting DriverPackName to 'None'"
     $Global:MyOSDCloud.DriverPackName = "None"
 }
 
-#Used to Determine Driver Pack
 $DriverPack = Get-OSDCloudDriverPack -Product $Product -OSVersion $OSVersion -OSReleaseID $OSReleaseID
-if ($DriverPack){
+if ($DriverPack) {
     $Global:MyOSDCloud.DriverPackName = $DriverPack.Name
 }
 
@@ -132,14 +131,14 @@ $driverpackID = $driverpackDetails.Id
 [string]$ToolLocation = "C:\Drivers"
 
 $ToolPath = "$ToolLocation\$driverpackID.exe"
-if (!(Test-Path -Path $ToolPath)){
+if (!(Test-Path -Path $ToolPath)) {
     Write-Output "Unable to find $ToolPath"
-	pause
+    pause
     Exit -1
 }
 
-$ToolArg = "/s /f C:\Drivers\"
-$Process = Start-Process -FilePath $ToolPath -ArgumentList $ToolArg -Wait -PassThru
+#$ToolArg = "/s /f C:\Drivers\"
+#$Process = Start-Process -FilePath $ToolPath -ArgumentList $ToolArg -Wait -PassThru
 
 Dism /Image:C: /Add-Driver /Driver:C:\Drivers /Recurse
 
@@ -258,7 +257,7 @@ start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Set
 echo Starten van Update-Firmware.ps1 >> "%logfile%"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Deploy-RunOnceTask-OSUpdate.ps1" >> "%logfile%" 2>&1
 
-:: echo Starten van OSUpdate.ps1 >> "%logfile%"
+echo Starten van OSUpdate.ps1 >> "%logfile%"
 :: start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
 
 echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
