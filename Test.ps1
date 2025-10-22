@@ -1,5 +1,5 @@
 #################################################################
-#   [PreOS] Update Module (robuust in WinPE)
+#   [PreOS] Update Module
 #################################################################
 Write-Host -ForegroundColor Green "Updating OSD PowerShell Module"
 
@@ -19,17 +19,17 @@ Import-Module OSD -Force
 #################################################################
 
 $Global:MyOSDCloud = [ordered]@{
-    Restart = [bool]$False
-    RecoveryPartition = [bool]$true
-    OEMActivation = [bool]$false
-    WindowsUpdate = [bool]$false
-    WindowsUpdateDrivers = [bool]$false
+    Restart               = [bool]$False
+    RecoveryPartition     = [bool]$true
+    OEMActivation         = [bool]$false
+    WindowsUpdate         = [bool]$false
+    WindowsUpdateDrivers  = [bool]$false
     WindowsDefenderUpdate = [bool]$false
-    SetTimeZone = [bool]$true
-    ClearDiskConfirm = [bool]$False
+    SetTimeZone           = [bool]$true
+    ClearDiskConfirm      = [bool]$False
     ShutdownSetupComplete = [bool]$false
-    SyncMSUpCatDriverUSB = [bool]$true
-    CheckSHA1 = [bool]$true
+    SyncMSUpCatDriverUSB  = [bool]$true
+    CheckSHA1             = [bool]$true
 }
 
 #################################################################
@@ -94,16 +94,14 @@ $UnattendXml = @'
                language="neutral"
                versionScope="nonSxS"
                xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-      <InputLocale>en-US</InputLocale>
-      <SystemLocale>nl-NL</SystemLocale>
-      <UILanguage>nl-NL</UILanguage>
+      <InputLocale>0409:00020409</InputLocale>
       <UserLocale>nl-NL</UserLocale>
     </component>
   </settings>
 </unattend>
 '@
 
-# Voorkom draaien in volwaardige Windows (dit hoort in WinPE)
+# Voorkom draaien in volwaardige Windows
 Block-WinOS
 
 $UnattendPath = Join-Path $Panther 'Unattend.xml'
@@ -125,8 +123,6 @@ $OOBECMD | Out-File -FilePath "$ScriptDir\oobe.cmd" -Encoding ascii -Force
 #================================================
 #    [PostOS] SetupComplete
 #================================================
-
-Write-SectionHeader "Maak SetupComplete file"
 
 $SetupComplete = @'
 @echo off
@@ -177,7 +173,7 @@ echo Starten van Copy-Start.ps1 >> "%logfile%"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Copy-Start.ps1" >> "%logfile%" 2>&1
 
 echo Starten van Update-Firmware.ps1 >> "%logfile%"
-start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Update-Firmware.ps1" >> "%logfile%" 2>&1
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Deploy-RunOnceTask-OSUpdate" >> "%logfile%" 2>&1
 
 echo Starten van OSUpdate.ps1 >> "%logfile%"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
