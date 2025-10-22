@@ -1,63 +1,3 @@
-# Helemaal bovenaan
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-
-
-#### functions definitions
-function Write-DarkGrayDate {
-    [CmdletBinding()]
-    param (
-        [Parameter(Position = 0)]
-        [System.String]
-        $Message
-    )
-    if ($Message) {
-        Write-Host -ForegroundColor DarkGray "$((Get-Date).ToString('yyyy-MM-dd-HHmmss')) $Message"
-    }
-    else {
-        Write-Host -ForegroundColor DarkGray "$((Get-Date).ToString('yyyy-MM-dd-HHmmss')) " -NoNewline
-    }
-}
-
-function Write-DarkGrayHost {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $true, Position = 0)]
-        [System.String]
-        $Message
-    )
-    Write-Host -ForegroundColor DarkGray $Message
-}
-
-function Write-DarkGrayLine {
-    [CmdletBinding()]
-    param ()
-    Write-Host -ForegroundColor DarkGray '========================================================================='
-}
-
-function Write-SectionHeader {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $true, Position = 0)]
-        [System.String]
-        $Message
-    )
-    Write-DarkGrayLine
-    Write-DarkGrayDate
-    Write-Host -ForegroundColor Cyan $Message
-}
-
-function Write-SectionSuccess {
-    [CmdletBinding()]
-    param (
-        [Parameter(Position = 0)]
-        [System.String]
-        $Message = 'Success!'
-    )
-    Write-DarkGrayDate
-    Write-Host -ForegroundColor Green $Message
-}
-
 #################################################################
 #   [PreOS] Update Module (robuust in WinPE)
 #################################################################
@@ -75,12 +15,22 @@ Write-Host -ForegroundColor Green "Importing OSD PowerShell Module"
 Import-Module OSD -Force
 
 #################################################################
-#   Bepaal type device
+#   Global.MyOSDCloud
 #################################################################
 
-$Product = (Get-MyComputerProduct)
-$Model = (Get-MyComputerModel)
-$Manufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
+$Global:MyOSDCloud = [ordered]@{
+    Restart = [bool]$False
+    RecoveryPartition = [bool]$true
+    OEMActivation = [bool]$false
+    WindowsUpdate = [bool]$false
+    WindowsUpdateDrivers = [bool]$false
+    WindowsDefenderUpdate = [bool]$false
+    SetTimeZone = [bool]$true
+    ClearDiskConfirm = [bool]$False
+    ShutdownSetupComplete = [bool]$false
+    SyncMSUpCatDriverUSB = [bool]$true
+    CheckSHA1 = [bool]$true
+}
 
 #################################################################
 #   [Prep] Zorg dat doelmappen bestaan
@@ -96,118 +46,19 @@ if (-not (Test-Path $Panther)) {
 }
 
 #################################################################
-#   Global:MyOSDCloud
-#################################################################
-$Global:MyOSDCloud = [pscustomobject]([ordered]@{
-    Restart               = $false
-    RecoveryPartition     = $true
-    OEMActivation         = $true
-    WindowsUpdate         = $false
-    WindowsUpdateDrivers  = $false
-    WindowsDefenderUpdate = $false
-    SetTimeZone           = $true
-    ClearDiskConfirm      = $false
-    ShutdownSetupComplete = $false
-    SyncMSUpCatDriverUSB  = $true
-    CheckSHA1             = $true
-})
-#################################################################
-#   HP Functies
-#################################################################
-write-host -ForegroundColor Cyan "HP Functions"
-
-#HPIA Functions
-Write-Host -ForegroundColor Green "[+] Function Get-HPIALatestVersion"
-Write-Host -ForegroundColor Green "[+] Function Install-HPIA"
-Write-Host -ForegroundColor Green "[+] Function Run-HPIA"
-Write-Host -ForegroundColor Green "[+] Function Get-HPIAXMLResult"
-Write-Host -ForegroundColor Green "[+] Function Get-HPIAJSONResult"
-Invoke-Expression (Invoke-RestMethod https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/HPIA/HPIA-Functions.ps1)
-
-#HP CMSL WinPE replacement
-Write-Host -ForegroundColor Green "[+] Function Get-HPOSSupport"
-Write-Host -ForegroundColor Green "[+] Function Get-HPSoftpaqListLatest"
-Write-Host -ForegroundColor Green "[+] Function Get-HPSoftpaqItems"
-Write-Host -ForegroundColor Green "[+] Function Get-HPDriverPackLatest"
-Invoke-Expression (Invoke-RestMethod https://raw.githubusercontent.com/OSDeploy/OSD/master/Public/OSDCloudTS/Test-HPIASupport.ps1)
-
-#Install-ModuleHPCMSL
-Write-Host -ForegroundColor Green "[+] Function Install-ModuleHPCMSL"
-Invoke-Expression (Invoke-RestMethod https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/EMPS/Install-ModuleHPCMSL.ps1)
-
-Write-Host -ForegroundColor Green "[+] Function Invoke-HPAnalyzer"
-Write-Host -ForegroundColor Green "[+] Function Invoke-HPDriverUpdate"
-Invoke-Expression (Invoke-RestMethod https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/EMPS/Invoke-HPDriverUpdate.ps1)
-
-#Enable HPIA | Update HP BIOS | Update HP TPM 
-if (Test-HPIASupport) {
-    Write-SectionHeader -Message "Detected HP Device, Enabling HPIA, HP BIOS and HP TPM Updates"
-    $Global:MyOSDCloud.DevMode = [bool]$true
-    $Global:MyOSDCloud.HPTPMUpdate = [bool]$true
-	
-    $Global:MyOSDCloud.HPIAALL = [bool]$false
-    $Global:MyOSDCloud.HPIADrivers = [bool]$true
-    $Global:MyOSDCloud.HPIASoftware = [bool]$false
-    $Global:MyOSDCloud.HPIAFirmware = [bool]$true	
-    $Global:MyOSDCloud.HPBIOSUpdate = [bool]$true
-    $Global:MyOSDCloud.HPBIOSWinUpdate = [bool]$false   
-    
-    write-host "Setting DriverPackName to 'None'"
-    $Global:MyOSDCloud.DriverPackName = "None"
-}
-
-$DriverPack = Get-OSDCloudDriverPack -Product $Product -OSVersion $OSVersion -OSReleaseID $OSReleaseID
-if ($DriverPack) {
-    $Global:MyOSDCloud.DriverPackName = $DriverPack.Name
-}
-
-#write variables to console
-Write-SectionHeader "OSDCloud Variables"
-Write-Output $Global:MyOSDCloud
-
-#### important OS variables
-$OSVersion = 'Windows 11'
-$OSReleaseID = '24H2'
-$OSName = 'Windows 11 23H2 x64'
-$OSEdition = 'Enterprise'
-$OSActivation = 'Retail'
-$OSLanguage = 'nl-nl'
-
-#################################################################
 #   [OS] Params and Start-OSDCloud
 #################################################################
 $Params = @{
-    OSVersion     = $OSVersion
-    OSBuild       = $OSReleaseID
-    OSEdition     = $OSEdition
-    OSLanguage    = $OSLanguage
-    OSLicense     = $OSLanguage
+    OSVersion     = "Windows 11"
+    OSBuild       = "24H2"
+    OSEdition     = "Pro"
+    OSLanguage    = "nl-nl"
+    OSLicense     = "Retail"
     ZTI           = $true
-    Firmware      = $false
+    Firmware      = $false     # Firmware doen we later via SetupComplete
     SkipAutopilot = $false
 }
-
 Start-OSDCloud @Params
-
-#################################################################
-#   Uitpakken, importeren en verwijderen van driverpack
-#################################################################
-
-$driverpackDetails = Get-HPDriverPackLatest
-$driverpackID = $driverpackDetails.Id
-[string]$ToolLocation = "C:\Drivers"
-
-$ToolPath = "$ToolLocation\$driverpackID.exe"
-if (!(Test-Path -Path $ToolPath)) {
-    Write-Output "Unable to find $ToolPath"
-    pause
-    Exit -1
-}
-
-#$ToolArg = "/s /f C:\Drivers\"
-#$Process = Start-Process -FilePath $ToolPath -ArgumentList $ToolArg -Wait -PassThru
-
-Dism /Image:C: /Add-Driver /Driver:C:\Drivers /Recurse
 
 #################################################################
 #   Download Files 
@@ -269,10 +120,8 @@ start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File C:\Windows\Setu
 $OOBECMD | Out-File -FilePath "$ScriptDir\oobe.cmd" -Encoding ascii -Force
 
 #================================================
-#    SetupComplete
-#================================================
 Write-SectionHeader "Maak SetupComplete file"
-
+#================================================
 $SetupComplete = @'
 @echo off
 :: Setup logging
@@ -322,10 +171,10 @@ echo Starten van Copy-Start.ps1 >> "%logfile%"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Copy-Start.ps1" >> "%logfile%" 2>&1
 
 echo Starten van Update-Firmware.ps1 >> "%logfile%"
-start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Deploy-RunOnceTask-OSUpdate.ps1" >> "%logfile%" 2>&1
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Update-Firmware.ps1" >> "%logfile%" 2>&1
 
 echo Starten van OSUpdate.ps1 >> "%logfile%"
-:: start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
 
 echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
 
@@ -335,9 +184,7 @@ exit /b 0
 # Schrijf het SetupComplete script weg
 $SetupComplete | Out-File -FilePath "$ScriptDir\SetupComplete.cmd" -Encoding ascii -Force
 
-#================================================
-#    Einde  Deployment
-#================================================
+# Herstart na 20 seconden
 Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
 Start-Sleep -Seconds 20
 wpeutil reboot
