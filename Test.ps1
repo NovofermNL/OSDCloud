@@ -165,15 +165,23 @@ if ($DriverPack) {
 Write-SectionHeader "OSDCloud Variables"
 Write-Output $Global:MyOSDCloud
 
+#### important OS variables
+$OSVersion = 'Windows 11'
+$OSReleaseID = '24H2'
+$OSName = 'Windows 11 23H2 x64'
+$OSEdition = 'Enterprise'
+$OSActivation = 'Retail'
+$OSLanguage = 'nl-nl'
+
 #################################################################
 #   [OS] Params and Start-OSDCloud
 #################################################################
 $Params = @{
-    OSVersion     = "Windows 11"
-    OSBuild       = "24H2"
-    OSEdition     = "Pro"
-    OSLanguage    = "nl-nl"
-    OSLicense     = "Retail"
+    OSVersion     = $OSVersion
+    OSBuild       = $OSReleaseID
+    OSEdition     = "$OSEdition
+    OSLanguage    = nl-nl
+    OSLicense     = $OSLanguage
     ZTI           = $true
     Firmware      = $false
     SkipAutopilot = $false
