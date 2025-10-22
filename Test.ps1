@@ -79,8 +79,11 @@ Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Se
 #Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/Public/main/Dev/OSD-CleanUp.ps1" | Out-File -FilePath "$ScriptDir\OSD-CleanUp.ps1" -Encoding utf8BOM -Force
 
 #=================================================
-Write-SectionHeader "[PostOS] Unattend (oobeSystem locale)"
+#    [PostOS] Unattend (oobeSystem locale)"
 #=================================================
+
+Write-Host -ForegroundColor Green "Plaatsen UnattendXml"
+
 $UnattendXml = @'
 <?xml version="1.0" encoding="utf-8"?>
 <unattend xmlns="urn:schemas-microsoft-com:unattend">
@@ -110,7 +113,7 @@ Write-DarkGrayHost "Use-WindowsUnattend -Path 'C:\' -UnattendPath $UnattendPath"
 Use-WindowsUnattend -Path 'C:\' -UnattendPath $UnattendPath | Out-Null
 
 #================================================
-Write-SectionHeader "[PostOS] OOBE CMD Command Line"
+#    [PostOS] OOBE CMD Command Line
 #================================================
 $OOBECMD = @'
 @echo off
@@ -120,8 +123,11 @@ start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File C:\Windows\Setu
 $OOBECMD | Out-File -FilePath "$ScriptDir\oobe.cmd" -Encoding ascii -Force
 
 #================================================
-Write-SectionHeader "Maak SetupComplete file"
+#    [PostOS] SetupComplete
 #================================================
+
+Write-SectionHeader "Maak SetupComplete file"
+
 $SetupComplete = @'
 @echo off
 :: Setup logging
