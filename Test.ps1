@@ -258,7 +258,7 @@ start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Set
 echo Starten van Update-Firmware.ps1 >> "%logfile%"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Deploy-RunOnceTask-OSUpdate.ps1" >> "%logfile%" 2>&1
 
-echo Starten van OSUpdate.ps1 >> "%logfile%"
+:: echo Starten van OSUpdate.ps1 >> "%logfile%"
 :: start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
 
 echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
