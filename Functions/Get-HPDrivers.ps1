@@ -1,3 +1,5 @@
+Write-Host "[+] Function Install-HPDrivers"
+
 function Get-HPDrivers {
     [CmdletBinding()]
     param (
