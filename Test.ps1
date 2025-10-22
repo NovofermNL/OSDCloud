@@ -1,3 +1,5 @@
+Write-Host -ForegroundColor Yellow "Starten van test-script"
+
 #################################################################
 #   [PreOS] Update Module
 #################################################################
