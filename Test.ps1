@@ -66,6 +66,11 @@ Start-OSDCloud @Params
 #   [PostOS] Download Files 
 #################################################################
 
+Write-Host -ForegroundColor Green "Download scripts voor OOBE-fase"
+
+# Zorg dat de scripts-map bestaat vóór het wegschrijven
+New-Item -ItemType Directory -Path 'C:\Windows\Setup\scripts' -Force | Out-Null
+
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1" | Out-File -FilePath "$ScriptDir\Remove-AppX.ps1" -Encoding ascii -Force
 Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin" -OutFile "$ScriptDir\start2.bin"
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1" | Out-File -FilePath "$ScriptDir\Copy-Start.ps1" -Encoding ascii -Force
