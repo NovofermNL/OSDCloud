@@ -189,6 +189,6 @@ exit /b 0
 $SetupComplete | Out-File -FilePath "$ScriptDir\SetupComplete.cmd" -Encoding ascii -Force
 
 # Herstart na 20 seconden
-Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
-Start-Sleep -Seconds 20
-wpeutil reboot
+#Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
+#Start-Sleep -Seconds 20
+#wpeutil reboot
