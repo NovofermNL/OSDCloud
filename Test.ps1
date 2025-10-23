@@ -35,7 +35,7 @@ $Global:MyOSDCloud = [ordered]@{
 }
 
 #################################################################
-#   [Prep] Zorg dat doelmappen bestaan
+#   [PreOS]Zorg dat doelmappen bestaan
 #################################################################
 $ScriptDir = 'C:\Windows\Setup\Scripts'
 if (-not (Test-Path $ScriptDir)) {
@@ -63,7 +63,7 @@ $Params = @{
 Start-OSDCloud @Params
 
 #################################################################
-#   Download Files 
+#   [PostOS] Download Files 
 #################################################################
 
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1" | Out-File -FilePath "$ScriptDir\Remove-AppX.ps1" -Encoding ascii -Force
