@@ -1,9 +1,9 @@
-Write-Host -ForegroundColor Yellow "Starten van test-script"
+Write-Host -ForegroundColor Yellow "Starten van installatie Windows 11 24H2 NL"
 
 #################################################################
 #   [PreOS] Update Module
 #################################################################
-Write-Host -ForegroundColor Green "Updating OSD PowerShell Module"
+Write-Host -ForegroundColor Green "Updaten OSD PowerShell Module"
 
 # NuGet-provider en PSGallery vertrouwen (handig in WinPE/clean)
 try { Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction Stop | Out-Null }
@@ -13,7 +13,7 @@ try { Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction 
 
 Install-Module OSD -Force -ErrorAction SilentlyContinue
 
-Write-Host -ForegroundColor Green "Importing OSD PowerShell Module"
+Write-Host -ForegroundColor Green "Importeren OSD PowerShell Module"
 Import-Module OSD -Force
 
 #################################################################
