@@ -1,4 +1,4 @@
-Write-Host "[+] Function Install-HPDrivers"
+Write-Host "[+] Function Get-HPDrivers"
 
 function Get-HPDrivers {
     [CmdletBinding()]
