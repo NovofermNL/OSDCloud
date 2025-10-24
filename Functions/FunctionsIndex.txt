@@ -4,3 +4,4 @@ Set-DefaultProfilePersonalPref.ps1
 Set-NLDutchKeyboardLayout.ps1
 Install-VCRedistributables.ps1
 Get-HPDrivers.ps1
+Rename-ComputerFromSerial.ps1
