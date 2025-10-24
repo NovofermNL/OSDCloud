@@ -1,3 +1,5 @@
+Write-Host "[+] function Rename-ComputerFromSerial"
+
 function Rename-ComputerFromSerial {
     <#
     .SYNOPSIS
