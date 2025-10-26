@@ -5,3 +5,4 @@ Set-NLDutchKeyboardLayout.ps1
 Install-VCRedistributables.ps1
 Get-HPDrivers.ps1
 Rename-ComputerFromSerial.ps1
+Remove-Capabilities.ps1
