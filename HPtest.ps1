@@ -206,13 +206,13 @@ try {
 
         # HPIA all enable, behalve bij uitzonderingen
         if ($Product -ne '83B2' -and $Model -notmatch 'zbook') {
-            $Global:MyOSDCloud.HPIAALL = [bool]$true
+            $Global:MyOSDCloud.HPIAALL = [bool]$false
         } else {
             Write-Host -ForegroundColor DarkYellow "HPIAALL overgeslagen voor model/product: $Model / $Product"
         }
 
         # Optioneel: CMSL latest driver pack forceren (nu uit)
-        # $Global:MyOSDCloud.HPCMSLDriverPackLatest = [bool]$true
+         $Global:MyOSDCloud.HPCMSLDriverPackLatest = [bool]$true
     }
     else {
         Write-Host -ForegroundColor DarkGray "Geen HP/HPIA-ondersteuning gedetecteerd. HP-specifieke updates worden niet geactiveerd"
