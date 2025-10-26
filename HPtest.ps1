@@ -34,57 +34,6 @@ $Global:MyOSDCloud = [ordered]@{
     CheckSHA1             = [bool]$true
 }
 
-#################################################################
-#   [PreOS] HP updates (HPIA/BIOS/TPM) – alleen op HP devices
-#################################################################
-try {
-    $Product = Get-MyComputerProduct
-    $Model   = Get-MyComputerModel
-
-    if (Test-HPIASupport) {
-        Write-Host -ForegroundColor Cyan "HP device gedetecteerd. HPIA/BIOS/TPM updates inschakelen"
-
-        # Altijd BIOS en TPM updates toestaan op HP
-        $Global:MyOSDCloud.HPBIOSUpdate = [bool]$true
-        $Global:MyOSDCloud.HPTPMUpdate  = [bool]$true
-
-        # HPIA all enable, behalve bij uitzonderingen
-        if ($Product -ne '83B2' -and $Model -notmatch 'zbook') {
-            $Global:MyOSDCloud.HPIAALL = [bool]$true
-        } else {
-            Write-Host -ForegroundColor DarkYellow "HPIAALL overgeslagen voor model/product: $Model / $Product"
-        }
-
-        # Optioneel: CMSL latest driver pack forceren (nu uit)
-        # $Global:MyOSDCloud.HPCMSLDriverPackLatest = [bool]$true
-    }
-    else {
-        Write-Host -ForegroundColor DarkGray "Geen HP/HPIA-ondersteuning gedetecteerd. HP-specifieke updates worden niet geactiveerd"
-    }
-}
-catch {
-    Write-Host -ForegroundColor Red "Fout bij HP-detectie/HPIA: $($_.Exception.Message)"
-}
-
-#=======================================================================
-#  [PostOS] Driver Management voor Microsoft Surface devices
-#=======================================================================
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-try {
-    $Product = Get-MyComputerProduct
-
-    if ($Product -match 'Surface') {
-        Write-Host -ForegroundColor Cyan "Surface gedetecteerd ($Product) – Surface driver script uitvoeren"
-        Invoke-Expression (Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Surface/MicrosoftSurfaceDriverIssue.ps1').Content
-    }
-    else {
-        Write-Host -ForegroundColor DarkGray "Geen Surface gedetecteerd (Product: $Product) – Surface script overgeslagen"
-    }
-}
-catch {
-    Write-Host -ForegroundColor Red "Fout bij Surface-detectie of uitvoering: $($_.Exception.Message)"
-}
 
 #################################################################
 #   [PreOS]Zorg dat doelmappen bestaan
@@ -240,6 +189,59 @@ exit /b 0
 
 # Schrijf het SetupComplete script weg
 $SetupComplete | Out-File -FilePath "$ScriptDir\SetupComplete.cmd" -Encoding ascii -Force
+
+#################################################################
+#   [PreOS] HP updates (HPIA/BIOS/TPM) – alleen op HP devices
+#################################################################
+try {
+    $Product = Get-MyComputerProduct
+    $Model   = Get-MyComputerModel
+
+    if (Test-HPIASupport) {
+        Write-Host -ForegroundColor Cyan "HP device gedetecteerd. HPIA/BIOS/TPM updates inschakelen"
+
+        # Altijd BIOS en TPM updates toestaan op HP
+        $Global:MyOSDCloud.HPBIOSUpdate = [bool]$true
+        $Global:MyOSDCloud.HPTPMUpdate  = [bool]$true
+
+        # HPIA all enable, behalve bij uitzonderingen
+        if ($Product -ne '83B2' -and $Model -notmatch 'zbook') {
+            $Global:MyOSDCloud.HPIAALL = [bool]$true
+        } else {
+            Write-Host -ForegroundColor DarkYellow "HPIAALL overgeslagen voor model/product: $Model / $Product"
+        }
+
+        # Optioneel: CMSL latest driver pack forceren (nu uit)
+        # $Global:MyOSDCloud.HPCMSLDriverPackLatest = [bool]$true
+    }
+    else {
+        Write-Host -ForegroundColor DarkGray "Geen HP/HPIA-ondersteuning gedetecteerd. HP-specifieke updates worden niet geactiveerd"
+    }
+}
+catch {
+    Write-Host -ForegroundColor Red "Fout bij HP-detectie/HPIA: $($_.Exception.Message)"
+}
+
+#=======================================================================
+#  [PostOS] Driver Management voor Microsoft Surface devices
+#=======================================================================
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+try {
+    $Product = Get-MyComputerProduct
+
+    if ($Product -match 'Surface') {
+        Write-Host -ForegroundColor Cyan "Surface gedetecteerd ($Product) – Surface driver script uitvoeren"
+        Invoke-Expression (Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Surface/MicrosoftSurfaceDriverIssue.ps1').Content
+    }
+    else {
+        Write-Host -ForegroundColor DarkGray "Geen Surface gedetecteerd (Product: $Product) – Surface script overgeslagen"
+    }
+}
+catch {
+    Write-Host -ForegroundColor Red "Fout bij Surface-detectie of uitvoering: $($_.Exception.Message)"
+}
+
 
 # Herstart na 20 seconden
 #Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
