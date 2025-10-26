@@ -34,7 +34,7 @@ $Global:MyOSDCloud = [ordered]@{
     CheckSHA1             = [bool]$true
 }
 
-
+<#
 #################################################################
 #   [PreOS]Zorg dat doelmappen bestaan
 #################################################################
@@ -47,7 +47,7 @@ $Panther = 'C:\Windows\Panther'
 if (-not (Test-Path $Panther)) {
     New-Item -ItemType Directory -Path $Panther -Force | Out-Null
 }
-
+#>
 #################################################################
 #   [OS] Params and Start-OSDCloud
 #################################################################
