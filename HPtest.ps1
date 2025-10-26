@@ -225,7 +225,6 @@ catch {
 #=======================================================================
 #  [PostOS] Driver Management voor Microsoft Surface devices
 #=======================================================================
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 try {
     $Product = Get-MyComputerProduct
