@@ -66,6 +66,26 @@ catch {
     Write-Host -ForegroundColor Red "Fout bij HP-detectie/HPIA: $($_.Exception.Message)"
 }
 
+#=======================================================================
+#  [PostOS] Driver Management voor Microsoft Surface devices
+#=======================================================================
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+try {
+    $Product = Get-MyComputerProduct
+
+    if ($Product -match 'Surface') {
+        Write-Host -ForegroundColor Cyan "Surface gedetecteerd ($Product) – Surface driver script uitvoeren"
+        Invoke-Expression (Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Surface/MicrosoftSurfaceDriverIssue.ps1').Content
+    }
+    else {
+        Write-Host -ForegroundColor DarkGray "Geen Surface gedetecteerd (Product: $Product) – Surface script overgeslagen"
+    }
+}
+catch {
+    Write-Host -ForegroundColor Red "Fout bij Surface-detectie of uitvoering: $($_.Exception.Message)"
+}
+
 #################################################################
 #   [PreOS]Zorg dat doelmappen bestaan
 #################################################################
