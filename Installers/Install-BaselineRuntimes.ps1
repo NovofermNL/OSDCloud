@@ -64,6 +64,7 @@ else {
     choco install dotnetfx -y --no-progress
 }
 
+<#
 ################################################################
 # .NET 8 Runtimes (Desktop + ASP.NET Core)
 ################################################################
@@ -77,7 +78,7 @@ winget install --id $NETCoreRuntime --exact --accept-package-agreements --accept
 
 Write-Verbose -Message "Installing ASP.NET Core 8 Runtime ($ASPNETCoreRuntime)..."
 winget install --id $ASPNETCoreRuntime --exact --accept-package-agreements --accept-source-agreements
-
+#>
 ################################################################
 # Visual C++ Redistributable 2015-2022 (x64 + x86) 
 ################################################################
