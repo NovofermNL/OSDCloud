@@ -34,20 +34,7 @@ $Global:MyOSDCloud = [ordered]@{
     CheckSHA1             = [bool]$true
 }
 
-<#
-#################################################################
-#   [PreOS]Zorg dat doelmappen bestaan
-#################################################################
-$ScriptDir = 'C:\Windows\Setup\Scripts'
-if (-not (Test-Path $ScriptDir)) {
-    New-Item -ItemType Directory -Path $ScriptDir -Force | Out-Null
-}
 
-$Panther = 'C:\Windows\Panther'
-if (-not (Test-Path $Panther)) {
-    New-Item -ItemType Directory -Path $Panther -Force | Out-Null
-}
-#>
 #################################################################
 #   [OS] Params and Start-OSDCloud
 #################################################################
@@ -62,6 +49,19 @@ $Params = @{
     SkipAutopilot = $false
 }
 Start-OSDCloud @Params
+
+#################################################################
+#   [PostOS] Zorg dat doelmappen bestaan
+#################################################################
+$ScriptDir = 'C:\Windows\Setup\Scripts'
+if (-not (Test-Path $ScriptDir)) {
+    New-Item -ItemType Directory -Path $ScriptDir -Force | Out-Null
+}
+
+$Panther = 'C:\Windows\Panther'
+if (-not (Test-Path $Panther)) {
+    New-Item -ItemType Directory -Path $Panther -Force | Out-Null
+}
 
 #################################################################
 #   [PostOS] Download Files 
