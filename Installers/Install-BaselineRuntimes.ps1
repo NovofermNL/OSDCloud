@@ -7,7 +7,7 @@ $OSSoftLogs = "C:\Logs\OSDCloud\Install\SYSTEM\$env:COMPUTERNAME-OSSoftware.log"
 New-Item -ItemType Directory -Path (Split-Path $OSSoftLogs) -Force | Out-Null
 Start-Transcript -Path $OSSoftLogs
 
-# Beveiliging (jouw voorkeur)
+# TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 #####################################################################
@@ -25,7 +25,7 @@ $VCRedistX64 = "Microsoft.VCRedist.2015+.x64"
 $VCRedistX86 = "Microsoft.VCRedist.2015+.x86"
 
 ################################################################
-# Package Manager (alleen nodig voor .NET Framework via choco)
+# Package Manager
 ################################################################
 
 Write-Host "Installing Chocolatey (nodig voor .NET Framework)..." -ForegroundColor Cyan
@@ -34,7 +34,7 @@ Set-ExecutionPolicy Bypass -Scope Process -Force
 iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
 ################################################################
-# .NET Framework (4.8/4.8.1 via choco dotnetfx)
+# .NET Framework (4.8/4.8.1)
 ################################################################
 Write-Host "Installing $SYSGroup1..." -ForegroundColor Cyan
 Write-Verbose "Installing .NET Framework (dotnetfx)..." -Verbose
