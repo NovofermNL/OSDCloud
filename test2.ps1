@@ -7,7 +7,6 @@ Write-Host -ForegroundColor Yellow "Starten van installatie Windows 11 24H2 NL"
 #################################################################
 Write-Host -ForegroundColor Green "Updaten OSD PowerShell Module"
 
-# NuGet-provider en PSGallery vertrouwen
 try { Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction Stop | Out-Null }
 catch { Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null }
 
@@ -17,6 +16,20 @@ Install-Module OSD -Force -ErrorAction SilentlyContinue
 
 Write-Host -ForegroundColor Green "Importeren OSD PowerShell Module"
 Import-Module OSD -Force
+
+#################################################################
+#   [PreOS]Zorg dat doelmappen bestaan
+#################################################################
+
+$ScriptDir = 'C:\Windows\Setup\Scripts'
+if (-not (Test-Path $ScriptDir)) {
+    New-Item -ItemType Directory -Path $ScriptDir -Force | Out-Null
+}
+
+$Panther = 'C:\Windows\Panther'
+if (-not (Test-Path $Panther)) {
+    New-Item -ItemType Directory -Path $Panther -Force | Out-Null
+}
 
 #################################################################
 #   [PreOS] Maak C:\ aan wanneer deze niet bestaat.
@@ -146,6 +159,7 @@ Start-OSDCloud @Params
 #################################################################
 
 Invoke-WebPSScript -Uri 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Download-Files.ps1'
+
 
 #=================================================
 #    [PostOS] Unattend (oobeSystem locale)"
