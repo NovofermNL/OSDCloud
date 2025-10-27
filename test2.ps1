@@ -1,6 +1,5 @@
 # ============================================
-#  OSDCloud + HP (HPIA/CMSL) – WinPE script
-#  Dominic Bruins – complete, gepatchte versie
+#  OSDCloud + HP (HPIA/CMSL) – WinPE
 # ============================================
 
 # --- Basis: TLS12 + ExecutionPolicy + transcript logging
@@ -10,7 +9,7 @@ $tsPath = "C:\Windows\Temp\OSDCloud-$(Get-Date -f yyyyMMdd-HHmmss).log"
 try { Start-Transcript -Path $tsPath -ErrorAction SilentlyContinue } catch {}
 
 # --- Console helpers
-$Global:ConsoleDateFmt = 'dd-MM-yyyy HH:mm:ss'   # voor scherm
+$Global:ConsoleDateFmt = 'dd-MM-yyyy HH:mm:ss'
 function Write-DarkGrayDate {
     [CmdletBinding()]
     param([string]$Message)
@@ -42,7 +41,7 @@ if (-not (Test-Path $ScriptDir)) { New-Item -ItemType Directory -Path $ScriptDir
 $Panther = 'C:\Windows\Panther'
 if (-not (Test-Path $Panther)) { New-Item -ItemType Directory -Path $Panther -Force | Out-Null }
 
-# --- MyOSDCloud (als object, zodat dot-assignments werken)
+# --- MyOSDCloud
 $Global:MyOSDCloud = [pscustomobject]([ordered]@{
     Restart               = $false
     RecoveryPartition     = $true
@@ -81,7 +80,9 @@ Write-Host -ForegroundColor Green "[+] Function Invoke-HPDriverUpdate"
 Invoke-Expression (Invoke-RestMethod https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/EMPS/Invoke-HPDriverUpdate.ps1)
 
 # --- Enable HPIA / BIOS / TPM wanneer HP
+$IsHP = $false
 if (Test-HPIASupport) {
+    $IsHP = $true
     Write-SectionHeader -Message "Detected HP Device, enabling HPIA, HP BIOS and HP TPM updates"
     $Global:MyOSDCloud.DevMode         = $true
     $Global:MyOSDCloud.HPTPMUpdate     = $true
@@ -95,19 +96,21 @@ if (Test-HPIASupport) {
     $Global:MyOSDCloud.DriverPackName  = "None"
 }
 
-# --- Belangrijke OS-variabelen (moet vóór Get-OSDCloudDriverPack)
+# --- Belangrijke OS-variabelen (moet vóór Start-OSDCloud)
 $OSVersion    = 'Windows 11'
 $OSReleaseID  = '24H2'
 $OSEdition    = 'Pro'
 $OSLanguage   = 'nl-nl'
 $OSActivation = 'Retail'
 
-# --- OSDCloud DriverPack-naam optioneel bepalen
-$DriverPack = Get-OSDCloudDriverPack -Product $Product -OSVersion $OSVersion -OSReleaseID $OSReleaseID
-if ($DriverPack) { $Global:MyOSDCloud.DriverPackName = $DriverPack.Name }
+# --- OSDCloud DriverPack-naam optioneel bepalen (NIET als eerder 'None' is gezet)
+if (-not $IsHP -and [string]::IsNullOrWhiteSpace($Global:MyOSDCloud.DriverPackName)) {
+    $DriverPack = Get-OSDCloudDriverPack -Product $Product -OSVersion $OSVersion -OSReleaseID $OSReleaseID
+    if ($DriverPack) { $Global:MyOSDCloud.DriverPackName = $DriverPack.Name }
+}
 
 # --- Debug output
-Write-SectionHeader "OSDCloud Variables"
+Write-SectionHeader -Message "OSDCloud Variables"
 $Global:MyOSDCloud | Out-Host
 
 # --- Start OSDCloud
@@ -127,6 +130,7 @@ Start-OSDCloud @Params
 Write-SectionHeader -Message "OSDCloud complete, running custom actions prior to reboot"
 
 # --- HP Driver Pack: download → uitpak → inject → cleanup
+#     Let op: Dit is bedoeld als alternatief voor OSDCloud DriverPacks (we gebruiken HPIA/CMSL).
 Install-ModuleHPCMSL  # echt uitvoeren, niet alleen definiëren
 
 $driverpackDetails = Get-HPDriverPackLatest
@@ -134,7 +138,7 @@ if (-not $driverpackDetails) { Write-Error "Geen HP driverpack gevonden."; Start
 
 $driverpackID  = $driverpackDetails.Id
 $ToolLocation  = "C:\Drivers"
-New-Item -ItemType Directory -Path $ToolLocation -Force | Out-Null
+if (-not (Test-Path $ToolLocation)) { New-Item -ItemType Directory -Path $ToolLocation -Force | Out-Null }
 $ToolPath      = Join-Path $ToolLocation "$driverpackID.exe"
 
 # Download
@@ -165,7 +169,6 @@ if (-not (Test-Path 'C:\Windows')) { Write-DarkGrayHost "Waarschuwing: C:\Window
 # Opruimen
 Remove-Item $ToolPath -Force -ErrorAction SilentlyContinue
 Remove-Item -Path C:\Drivers\ -Recurse -Force -ErrorAction SilentlyContinue
-
 
 # --- Klaar → Reboot
 Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
