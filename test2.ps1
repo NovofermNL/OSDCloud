@@ -100,7 +100,7 @@ if ($HPEnterprise) {
 }
 
 #################################################################
-#   Global.MyOSDCloud (één definitie, samengevoegd)
+#   Global.MyOSDCloud
 #################################################################
 $Global:MyOSDCloud = [ordered]@{
     Restart               = [bool]$False
@@ -141,28 +141,11 @@ $Params = @{
 }
 Start-OSDCloud @Params
 
-<#
-#################################################################
-#   [PreOS] Zorg dat doelmappen bestaan
-#################################################################
-$ScriptDir = 'C:\Windows\Setup\Scripts'
-if (-not (Test-Path $ScriptDir)) {
-    New-Item -ItemType Directory -Path $ScriptDir -Force | Out-Null
-}
-
-$Panther = 'C:\Windows\Panther'
-if (-not (Test-Path $Panther)) {
-    New-Item -ItemType Directory -Path $Panther -Force | Out-Null
-}
-#>
 #################################################################
 #   [PostOS] Download Files 
 #################################################################
 
 Write-Host -ForegroundColor Green "Download scripts voor OOBE-fase"
-
-# Zorg dat de scripts-map bestaat vóór het wegschrijven
-New-Item -ItemType Directory -Path 'C:\Windows\Setup\scripts' -Force | Out-Null
 
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1" | Out-File -FilePath "$ScriptDir\Remove-AppX.ps1" -Encoding ascii -Force
 Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin" -OutFile "$ScriptDir\start2.bin"
