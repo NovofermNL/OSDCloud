@@ -1,3 +1,5 @@
+Write-Host "[+] Function Remove-Capabilities"
+
 function Remove-Capabilities {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
     param(
