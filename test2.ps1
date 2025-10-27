@@ -114,6 +114,7 @@ $Global:MyOSDCloud = [ordered]@{
     ShutdownSetupComplete = [bool]$false
     SyncMSUpCatDriverUSB  = [bool]$true
     CheckSHA1             = [bool]$true
+    ZTI                   = [bool]$true
 
     #DevMode               = [bool]$true
     NetFx3                = [bool]$true
@@ -135,7 +136,6 @@ $Params = @{
     OSEdition     = "Pro"
     OSLanguage    = "nl-nl"
     OSLicense     = "Retail"
-    ZTI           = $true
     Firmware      = $false
     SkipAutopilot = $false
 }
