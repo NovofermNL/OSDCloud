@@ -21,15 +21,13 @@ Import-Module OSD -Force
 #   [PreOS]Zorg dat doelmappen bestaan
 #################################################################
 
+# Definieer de variabele voor de internetverbinding
+$InternetConnection = $true 
+# Definieer de map waar SetupComplete.cmd en oobe.cmd
 $ScriptDir = 'C:\Windows\Setup\Scripts'
-if (-not (Test-Path $ScriptDir)) {
-    New-Item -ItemType Directory -Path $ScriptDir -Force | Out-Null
-}
-
-$Panther = 'C:\Windows\Panther'
-if (-not (Test-Path $Panther)) {
-    New-Item -ItemType Directory -Path $Panther -Force | Out-Null
-}
+# Definieer een pad voor tijdelijke bestanden, bijvoorbeeld in de WinPE-omgeving
+$Panther = "$env:TEMP\Panther"
+if (-not (Test-Path $Panther)) { New-Item -Path $Panther -ItemType Directory | Out-Null }
 
 #################################################################
 #   [PreOS] Maak C:\ aan wanneer deze niet bestaat.
