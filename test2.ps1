@@ -19,23 +19,12 @@ Write-Host -ForegroundColor Green "Importeren OSD PowerShell Module"
 Import-Module OSD -Force
 
 #################################################################
-#   [PreOS] Check C:
+#   [PreOS] Maak C:\ aan wanneer deze niet bestaat.
 #################################################################
 
-Import-Module OSD -Force
-
-# Alleen aanmaken als C: nog niet bestaat
 if (-not (Test-Path 'C:\')) {
-    # Optie 1: automatisch (detecteert UEFI/BIOS, kiest juiste disk als er maar 1 is)
     New-OSDisk -Force
-
-    # --of-- expliciet de juiste schijf kiezen:
-    # New-OSDisk -DiskNumber 0 -Force
-
-    # Desgewenst opties:
-    # New-OSDisk -DiskNumber 0 -PartitionStyle GPT -NoRecoveryPartition -Force
 }
-
 
 #################################################################
 #   [PreOS] OSDCloud functies
