@@ -1,5 +1,4 @@
-# TLS 1.2 afdwingen
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+# [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 Write-Host -ForegroundColor Yellow "Starten van installatie Windows 11 24H2 NL"
 
