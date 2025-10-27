@@ -19,23 +19,10 @@ Write-Host -ForegroundColor Green "Importeren OSD PowerShell Module"
 Import-Module OSD -Force
 
 #################################################################
-#   [PreOS] OSDCloud functies + internet
+#   [PreOS] OSDCloud functies
 #################################################################
-try {
-    Invoke-Expression -Command (Invoke-RestMethod -Uri functions.osdcloud.com)
-} catch {
-    Write-Host "Kon functions.osdcloud.com niet laden" -ForegroundColor Red
-}
 
-$InternetConnection = $false
-if (Get-Command -Name Test-OSDCloudNetwork -ErrorAction SilentlyContinue) {
-    $InternetConnection = [bool](Test-OSDCloudNetwork)
-} else {
-    try {
-        $null = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/" -Method Head -TimeoutSec 10
-        $InternetConnection = $true
-    } catch { $InternetConnection = $false }
-}
+Invoke-Expression -Command (Invoke-RestMethod -Uri functions.osdcloud.com)
 
 #################################################################
 #   [PreOS] HP detectie (TPM/BIOS/HPIA)
