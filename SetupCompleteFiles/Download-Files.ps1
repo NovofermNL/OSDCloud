@@ -1,8 +1,4 @@
-#################################################################
-#   [PostOS] Download Files 
-#################################################################
 
-Write-Host -ForegroundColor Green "Download scripts voor OOBE-fase"
 
 $ScriptDir = "C:\Windows\Setup\Scripts"
 
