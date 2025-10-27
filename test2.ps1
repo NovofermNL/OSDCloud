@@ -28,10 +28,10 @@ Invoke-Expression -Command (Invoke-RestMethod -Uri functions.osdcloud.com)
 #   [PreOS] HP detectie (TPM/BIOS/HPIA)
 #################################################################
 $Manufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
-$Model        = (Get-CimInstance -ClassName Win32_ComputerSystem).Model
-$HPTPM        = $false
-$HPBIOS       = $false
-$HPIADrivers  = $false
+$Model = (Get-CimInstance -ClassName Win32_ComputerSystem).Model
+$HPTPM = $false
+$HPBIOS = $false
+$HPIADrivers = $false
 $HPEnterprise = $false
 
 if ($Manufacturer -match 'HP' -or $Manufacturer -match 'Hewlett-Packard') {
@@ -49,17 +49,18 @@ if ($HPEnterprise) {
             osdcloud-InstallModuleHPCMSL
         }
 
-        $TPM   = $null
-        $BIOS  = $null
-        if (Get-Command osdcloud-HPTPMDetermine -ErrorAction SilentlyContinue) { $TPM  = osdcloud-HPTPMDetermine }
-        if (Get-Command osdcloud-HPBIOSDetermine -ErrorAction SilentlyContinue){ $BIOS = osdcloud-HPBIOSDetermine }
+        $TPM = $null
+        $BIOS = $null
+        if (Get-Command osdcloud-HPTPMDetermine -ErrorAction SilentlyContinue) { $TPM = osdcloud-HPTPMDetermine }
+        if (Get-Command osdcloud-HPBIOSDetermine -ErrorAction SilentlyContinue) { $BIOS = osdcloud-HPBIOSDetermine }
 
         $HPIADrivers = $true
 
         if ($TPM) {
             Write-Host "HP Update TPM Firmware: $TPM - Requires Interaction" -ForegroundColor Yellow
             $HPTPM = $true
-        } else {
+        }
+        else {
             $HPTPM = $false
         }
 
@@ -69,17 +70,20 @@ if ($HPEnterprise) {
                 Write-Host "HP System Firmware already Current: $CurrentVer" -ForegroundColor Green
             }
             $HPBIOS = $false
-        } else {
+        }
+        else {
             if ((Get-Command Get-HPBIOSUpdates -ErrorAction SilentlyContinue) -and (Get-Command Get-HPBIOSVersion -ErrorAction SilentlyContinue)) {
-                $LatestVer  = (Get-HPBIOSUpdates -Latest).ver
+                $LatestVer = (Get-HPBIOSUpdates -Latest).ver
                 $CurrentVer = Get-HPBIOSVersion
                 Write-Host "HP Update System Firmware from $CurrentVer to $LatestVer" -ForegroundColor Yellow
-            } else {
+            }
+            else {
                 Write-Host "HP BIOS update geadviseerd (versie-info niet beschikbaar)" -ForegroundColor Yellow
             }
             $HPBIOS = $true
         }
-    } catch {
+    }
+    catch {
         Write-Host "HP Enterprise detectie of modules laden is mislukt: $($_.Exception.Message)" -ForegroundColor Red
         $HPTPM = $false
         $HPBIOS = $false
@@ -103,10 +107,10 @@ $Global:MyOSDCloud = [ordered]@{
     SyncMSUpCatDriverUSB  = [bool]$true
     CheckSHA1             = [bool]$true
 
-    DevMode               = [bool]$true
+    #DevMode               = [bool]$true
     NetFx3                = [bool]$true
-    Bitlocker             = [bool]$true
-    OSDCloudUnattend      = [bool]$true
+    #Bitlocker             = [bool]$true
+    #OSDCloudUnattend      = [bool]$true
 
     HPIADrivers           = [bool]$HPIADrivers
     HPTPMUpdate           = [bool]$HPTPM
@@ -257,10 +261,10 @@ echo Starten van Copy-Start.ps1 >> "%logfile%"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Copy-Start.ps1" >> "%logfile%" 2>&1
 
 echo Starten van Update-Firmware.ps1 >> "%logfile%"
-start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Deploy-RunOnceTask-OSUpdate" >> "%logfile%" 2>&1
+::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Deploy-RunOnceTask-OSUpdate" >> "%logfile%" 2>&1
 
 echo Starten van OSUpdate.ps1 >> "%logfile%"
-::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
 
 echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
 
