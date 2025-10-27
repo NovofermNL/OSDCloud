@@ -22,24 +22,20 @@ Import-Module OSD -Force
 #   [PreOS] Check C:
 #################################################################
 
-# Controleer of C: bestaat
-if (-not (Test-Path "C:\")) {
-    Write-Host "C: niet gevonden — controleren op beschikbare schijven..." -ForegroundColor Yellow
+Import-Module OSD -Force
 
-    # Zoek de eerste niet-gemounte schijf
-    $Disk = Get-Disk | Where-Object PartitionStyle -Eq 'RAW' | Sort-Object Number | Select-Object -First 1
+# Alleen aanmaken als C: nog niet bestaat
+if (-not (Test-Path 'C:\')) {
+    # Optie 1: automatisch (detecteert UEFI/BIOS, kiest juiste disk als er maar 1 is)
+    New-OSDisk -Force
 
-    if ($Disk) {
-        Write-Host "Nieuwe schijf gevonden: Disk $($Disk.Number)" -ForegroundColor Green
-        Initialize-Disk -Number $Disk.Number -PartitionStyle GPT -PassThru |
-            New-Partition -UseMaximumSize -AssignDriveLetter |
-            Format-Volume -FileSystem NTFS -NewFileSystemLabel "OSDisk" -Confirm:$false
-        Write-Host "Schijf succesvol geformatteerd en toegewezen als C:" -ForegroundColor Green
-    }
-    else {
-        Write-Host "Geen geschikte schijf gevonden om te initialiseren." -ForegroundColor Red
-    }
+    # --of-- expliciet de juiste schijf kiezen:
+    # New-OSDisk -DiskNumber 0 -Force
+
+    # Desgewenst opties:
+    # New-OSDisk -DiskNumber 0 -PartitionStyle GPT -NoRecoveryPartition -Force
 }
+
 
 #################################################################
 #   [PreOS] OSDCloud functies
