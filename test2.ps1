@@ -163,9 +163,12 @@ Invoke-WebPSScript -Uri 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/m
 #    [PostOS] Unattend (oobeSystem locale)"
 #=================================================
 
-Write-Host -ForegroundColor Green "Plaatsen UnattendXml"
+$OSDrive = (Get-Volume | Where-Object {
+    $_.DriveLetter -and (Test-Path ("{0}:\Windows\System32" -f $_.DriveLetter))
+} | Select-Object -First 1).DriveLetter
+$OSRoot = "$OSDrive`:"
 
-$UnattendXml = @'
+$UnattendXml = @"
 <?xml version="1.0" encoding="utf-8"?>
 <unattend xmlns="urn:schemas-microsoft-com:unattend">
   <settings pass="oobeSystem">
@@ -180,16 +183,13 @@ $UnattendXml = @'
     </component>
   </settings>
 </unattend>
-'@
+"@
 
-# Voorkom draaien in volwaardige Windows
-Block-WinOS
-
+$Panther = Join-Path $OSRoot 'Windows\Panther'
 $UnattendPath = Join-Path $Panther 'Unattend.xml'
-$UnattendXml | Out-File -FilePath $UnattendPath -Encoding utf8 -Width 2000 -Force
+$UnattendXml | Out-File -FilePath $UnattendPath -Encoding utf8 -Force
 
-Write-DarkGrayHost "Use-WindowsUnattend -Path 'C:\' -UnattendPath $UnattendPath"
-Use-WindowsUnattend -Path 'C:\' -UnattendPath $UnattendPath | Out-Null
+Use-WindowsUnattend -Path $OSRoot -UnattendPath $UnattendPath
 
 #================================================
 #    [PostOS] OOBE CMD Command Line
