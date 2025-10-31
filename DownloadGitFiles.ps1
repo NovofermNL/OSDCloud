@@ -1,6 +1,6 @@
 
 # Doelmappen
-$ScriptDir = 'C:\Temp\SetupTest\Scripts'
+$ScriptDir = 'C:\Windows\Setup\Scripts'
 if (-not (Test-Path -LiteralPath $ScriptDir)) {
     New-Item -ItemType Directory -Path $ScriptDir -Force | Out-Null
 }
