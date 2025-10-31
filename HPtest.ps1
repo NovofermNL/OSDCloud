@@ -100,14 +100,14 @@ catch {
 #=======================================================================
 
 try {
-    $Product = Get-MyComputerProduct
+    $Product = (Get-ComputerInfo -property 'CsModel')
 
     if ($Product -match 'Surface') {
-        Write-Host -ForegroundColor Cyan "Surface gedetecteerd ($Product) – Surface driver script uitvoeren"
+        Write-Host -ForegroundColor Cyan "Surface gedetecteerd "$Product" – Surface driver script uitvoeren"
         Invoke-Expression (Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Surface/MicrosoftSurfaceDriverIssue.ps1').Content
     }
     else {
-        Write-Host -ForegroundColor DarkGray "Geen Surface gedetecteerd (Product: $Product) – Surface script overgeslagen"
+        Write-Host -ForegroundColor DarkGray "Geen Surface gedetecteerd. Surface script overgeslagen"
     }
 }
 catch {
