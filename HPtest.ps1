@@ -110,7 +110,6 @@ catch {
     else {
         Write-Host -ForegroundColor DarkGray "Geen Surface gedetecteerd. Surface script overgeslagen"
     }
-}
 catch {
     Write-Host -ForegroundColor Red "Fout bij Surface-detectie of uitvoering: $($_.Exception.Message)"
 }
