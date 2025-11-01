@@ -120,6 +120,8 @@ catch {
 
 Write-Host -ForegroundColor Green "Download scripts voor OOBE-fase"
 
+invoke-WebRequest -Uri https://raw.githubusercontent.com/NovofermNL/OSDCloud/refs/heads/main/DownloadGitFiles.ps1
+<#
 New-Item -ItemType Directory -Path 'C:\Windows\Setup\scripts' -Force | Out-Null
 
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1" | Out-File -FilePath "$ScriptDir\Remove-AppX.ps1" -Encoding ascii -Force
@@ -129,7 +131,7 @@ Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Se
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1" | Out-File -FilePath "$ScriptDir\New-ComputerName.ps1" -Encoding ascii -Force
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Deploy-RunOnceTask-OSUpdate.ps1" | Out-File -FilePath "$ScriptDir\Deploy-RunOnceTask-OSUpdate.ps1"
 Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Update-Firmware.ps1" | Out-File -FilePath "$ScriptDir\Update-Firmware.ps1" -Encoding ascii -Force
-
+#>
 #=================================================
 #    [PostOS] Unattend (oobeSystem locale)"
 #=================================================
