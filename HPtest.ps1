@@ -68,24 +68,25 @@ if (-not (Test-Path $Panther)) {
 #################################################################
 try {
     $Product = Get-MyComputerProduct
-    $Model   = Get-MyComputerModel
+    $Model = Get-MyComputerModel
 
     if (Test-HPIASupport) {
         Write-Host -ForegroundColor Cyan "HP device gedetecteerd. HPIA/BIOS/TPM updates inschakelen"
 
         # Altijd BIOS en TPM updates toestaan op HP
         $Global:MyOSDCloud.HPBIOSUpdate = [bool]$true
-        $Global:MyOSDCloud.HPTPMUpdate  = [bool]$true
+        $Global:MyOSDCloud.HPTPMUpdate = [bool]$true
 
         # HPIA all enable, behalve bij uitzonderingen
         if ($Product -ne '83B2' -and $Model -notmatch 'zbook') {
             $Global:MyOSDCloud.HPIAALL = [bool]$false
-        } else {
+        }
+        else {
             Write-Host -ForegroundColor DarkYellow "HPIAALL overgeslagen voor model/product: $Model / $Product"
         }
 
         # Optioneel: CMSL latest driver pack forceren (nu uit)
-         $Global:MyOSDCloud.HPCMSLDriverPackLatest = [bool]$true
+        $Global:MyOSDCloud.HPCMSLDriverPackLatest = [bool]$true
     }
     else {
         Write-Host -ForegroundColor DarkGray "Geen HP/HPIA-ondersteuning gedetecteerd. HP-specifieke updates worden niet geactiveerd"
@@ -103,7 +104,7 @@ try {
     $Product = (Get-ComputerInfo -property 'CsModel')
 
     if ($Product -match 'Surface') {
-        Write-Host -ForegroundColor Cyan "Surface gedetecteerd "$Product" – Surface driver script uitvoeren"
+        Write-Host -ForegroundColor Cyan "Surface gedetecteerd "$Product" Surface driver script uitvoeren"
         Invoke-Expression (Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Surface/MicrosoftSurfaceDriverIssue.ps1').Content
     }
     else {
