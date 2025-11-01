@@ -63,33 +63,36 @@ if (-not (Test-Path $Panther)) {
     New-Item -ItemType Directory -Path $Panther -Force | Out-Null
 }
 
-#################################################################
-#   [PreOS] HP updates (HPIA/BIOS/TPM) – alleen op HP devices
-#################################################################
+#=======================================================================
+#  [PostOS] HP Driver/BIOS/TPM (HPIA) – Detectie en instellingen
+#=======================================================================
 try {
     $Product = Get-MyComputerProduct
-    $Model = Get-MyComputerModel
+    $Model   = Get-MyComputerModel
 
     if (Test-HPIASupport) {
-        Write-Host -ForegroundColor Cyan "HP device gedetecteerd. HPIA/BIOS/TPM updates inschakelen"
+        Write-Host -ForegroundColor Cyan "HP device gedetecteerd ($Model / $Product). HPIA/BIOS/TPM updates inschakelen"
 
         # Altijd BIOS en TPM updates toestaan op HP
-        $Global:MyOSDCloud.HPBIOSUpdate = [bool]$true
-        $Global:MyOSDCloud.HPTPMUpdate = [bool]$true
+        $Global:MyOSDCloud.HPBIOSUpdate = $true
+        $Global:MyOSDCloud.HPTPMUpdate  = $true
 
-        # HPIA all enable, behalve bij uitzonderingen
+        # HPIA all ENABLE, behalve bij uitzonderingen
         if ($Product -ne '83B2' -and $Model -notmatch 'zbook') {
-            $Global:MyOSDCloud.HPIAALL = [bool]$false
+            # Geen uitzondering: HPIA all aan
+            $Global:MyOSDCloud.HPIAALL = $true
         }
         else {
-            Write-Host -ForegroundColor DarkYellow "HPIAALL overgeslagen voor model/product: $Model / $Product"
+            # Uitzondering: HPIA all uit
+            $Global:MyOSDCloud.HPIAALL = $false
+            Write-Host -ForegroundColor DarkYellow "Uitzondering gedetecteerd. HPIAALL uit voor model/product: $Model / $Product"
         }
 
-        # Optioneel: CMSL latest driver pack forceren (nu uit)
-        $Global:MyOSDCloud.HPCMSLDriverPackLatest = [bool]$true
+        # Optioneel: CMSL latest driver pack forceren
+        $Global:MyOSDCloud.HPCMSLDriverPackLatest = $true
     }
     else {
-        Write-Host -ForegroundColor DarkGray "Geen HP/HPIA-ondersteuning gedetecteerd. HP-specifieke updates worden niet geactiveerd"
+        Write-Host -ForegroundColor DarkGray "Geen HP/HPIA-ondersteuning gedetecteerd. HP-specifieke updates worden niet geactiveerd."
     }
 }
 catch {
@@ -99,21 +102,27 @@ catch {
 #=======================================================================
 #  [PostOS] Driver Management voor Microsoft Surface devices
 #=======================================================================
-
-#try {
-#    $Product = (Get-ComputerInfo -property 'CsModel')
+try {
+    # $Product is al gezet hierboven; zo niet, fallback:
+    if (-not $Product) { $Product = (Get-CimInstance Win32_ComputerSystemProduct).Name }
 
     if ($Product -match 'Surface') {
-        Write-Host -ForegroundColor Cyan "Surface gedetecteerd "$Product" Surface driver script uitvoeren"
-        Invoke-Expression (Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Surface/MicrosoftSurfaceDriverIssue.ps1').Content
+        Write-Host -ForegroundColor Cyan "Surface gedetecteerd: $Product - Surface driver script uitvoeren"
+
+        # TLS 1.2 afdwingen
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+        $url = 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Surface/MicrosoftSurfaceDriverIssue.ps1'
+        $scriptContent = Invoke-WebRequest -UseBasicParsing -Uri $url -ErrorAction Stop | Select-Object -ExpandProperty Content
+        Invoke-Expression $scriptContent
     }
     else {
-        Write-Host -ForegroundColor DarkGray "Geen Surface gedetecteerd. Surface script overgeslagen"
+        Write-Host -ForegroundColor DarkGray "Geen Surface gedetecteerd ($Product). Surface-script overgeslagen."
     }
+}
 catch {
     Write-Host -ForegroundColor Red "Fout bij Surface-detectie of uitvoering: $($_.Exception.Message)"
 }
-
 #################################################################
 #   [PostOS] Download Files 
 #################################################################
@@ -121,17 +130,16 @@ catch {
 Write-Host -ForegroundColor Green "Download scripts voor OOBE-fase"
 
 Invoke-WebPSScript -Uri https://raw.githubusercontent.com/NovofermNL/OSDCloud/refs/heads/main/DownloadGitFiles.ps1
-
 <#
-$SetupCompleteURI = 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles'
+New-Item -ItemType Directory -Path 'C:\Windows\Setup\scripts' -Force | Out-Null
 
-Invoke-RestMethod "$SetupCompleteURI/Remove-Appx.ps1" | Out-File -FilePath "$ScriptDir\Remove-AppX.ps1" -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Remove-Appx.ps1" | Out-File -FilePath "$ScriptDir\Remove-AppX.ps1" -Encoding ascii -Force
 Invoke-WebRequest -Uri "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin" -OutFile "$ScriptDir\start2.bin"
-Invoke-RestMethod "$SetupCompleteURI/Copy-Start.ps1" | Out-File -FilePath "$ScriptDir\Copy-Start.ps1" -Encoding ascii -Force
-Invoke-RestMethod "$SetupCompleteURI/OSUpdate.ps1" | Out-File -FilePath "$ScriptDir\OSUpdate.ps1" -Encoding ascii -Force
-Invoke-RestMethod "$SetupCompleteURI/New-ComputerName.ps1" | Out-File -FilePath "$ScriptDir\New-ComputerName.ps1" -Encoding ascii -Force
-Invoke-RestMethod "$SetupCompleteURI/Deploy-RunOnceTask-OSUpdate.ps1" | Out-File -FilePath "$ScriptDir\Deploy-RunOnceTask-OSUpdate.ps1"
-#Invoke-RestMethod "$SetupCompleteURI/Update-Firmware.ps1" | Out-File -FilePath "$ScriptDir\Update-Firmware.ps1" -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1" | Out-File -FilePath "$ScriptDir\Copy-Start.ps1" -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/OSUpdate.ps1" | Out-File -FilePath "$ScriptDir\OSUpdate.ps1" -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1" | Out-File -FilePath "$ScriptDir\New-ComputerName.ps1" -Encoding ascii -Force
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Deploy-RunOnceTask-OSUpdate.ps1" | Out-File -FilePath "$ScriptDir\Deploy-RunOnceTask-OSUpdate.ps1"
+Invoke-RestMethod "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Update-Firmware.ps1" | Out-File -FilePath "$ScriptDir\Update-Firmware.ps1" -Encoding ascii -Force
 #>
 #=================================================
 #    [PostOS] Unattend (oobeSystem locale)"
