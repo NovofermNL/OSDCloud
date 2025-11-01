@@ -100,8 +100,8 @@ catch {
 #  [PostOS] Driver Management voor Microsoft Surface devices
 #=======================================================================
 
-try {
-    $Product = (Get-ComputerInfo -property 'CsModel')
+#try {
+#    $Product = (Get-ComputerInfo -property 'CsModel')
 
     if ($Product -match 'Surface') {
         Write-Host -ForegroundColor Cyan "Surface gedetecteerd "$Product" Surface driver script uitvoeren"
