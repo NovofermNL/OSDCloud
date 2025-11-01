@@ -120,6 +120,9 @@ catch {
 
 Write-Host -ForegroundColor Green "Download scripts voor OOBE-fase"
 
+invoke-WebRequest -Uri 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/refs/heads/main/DownloadGitFiles.ps1'
+
+<#
 $SetupCompleteURI = 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles'
 
 Invoke-RestMethod "$SetupCompleteURI/Remove-Appx.ps1" | Out-File -FilePath "$ScriptDir\Remove-AppX.ps1" -Encoding ascii -Force
@@ -129,7 +132,7 @@ Invoke-RestMethod "$SetupCompleteURI/OSUpdate.ps1" | Out-File -FilePath "$Script
 Invoke-RestMethod "$SetupCompleteURI/New-ComputerName.ps1" | Out-File -FilePath "$ScriptDir\New-ComputerName.ps1" -Encoding ascii -Force
 Invoke-RestMethod "$SetupCompleteURI/Deploy-RunOnceTask-OSUpdate.ps1" | Out-File -FilePath "$ScriptDir\Deploy-RunOnceTask-OSUpdate.ps1"
 #Invoke-RestMethod "$SetupCompleteURI/Update-Firmware.ps1" | Out-File -FilePath "$ScriptDir\Update-Firmware.ps1" -Encoding ascii -Force
-
+#>
 #=================================================
 #    [PostOS] Unattend (oobeSystem locale)"
 #=================================================
