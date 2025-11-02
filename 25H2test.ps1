@@ -130,9 +130,6 @@ set "MARKER=%ProgramData%\OSDeploy\OOBE.done"
 rem -> voorkom herhaalde uitvoering
 if exist "%MARKER%" goto :EOF
 
-rem (optioneel, liever niet in OOBE)
-rem %PS% -NoProfile -ExecutionPolicy Bypass -Command "Install-Module AutopilotOOBE -Force -Scope AllUsers; Install-Module OSD -Force -Scope AllUsers"
-
 rem -> Start alleen OOBEDeploy; laat OOBEDeploy zelf herstarten indien nodig
 "%PS%" -NoProfile -ExecutionPolicy Bypass -Command "Import-Module OSD -Force; Start-OOBEDeploy"
 
