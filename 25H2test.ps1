@@ -30,50 +30,41 @@ $Params = @{
 }
 Start-OSDCloud @Params
 
-#================================================
-#  [PostOS] OOBEDeploy Configuration
-#================================================
-Write-Host -ForegroundColor Green "Create C:\ProgramData\OSDeploy\OSDeploy.OOBEDeploy.json"
 $OOBEDeployJson = @'
 {
-    "Autopilot":  {
-                      "IsPresent":  true
-                  },
-    "AddNetFX3":  {
-                      "IsPresent":  true
-                    },                     
-    "RemoveAppx":  [
-                       "Microsoft.549981C3F5F10",
-                        "Microsoft.BingWeather",
-                        "Microsoft.GetHelp",
-                        "Microsoft.Getstarted",
-                        "Microsoft.Microsoft3DViewer",
-                        "Microsoft.MicrosoftOfficeHub",
-                        "Microsoft.MicrosoftSolitaireCollection",
-                        "Microsoft.MixedReality.Portal",
-                        "Microsoft.People",
-                        "Microsoft.SkypeApp",
-                        "Microsoft.Wallet",
-                        "Microsoft.WindowsCamera",
-                        "microsoft.windowscommunicationsapps",
-                        "Microsoft.WindowsFeedbackHub",
-                        "Microsoft.WindowsMaps",
-                        "Microsoft.Xbox.TCUI",
-                        "Microsoft.XboxApp",
-                        "Microsoft.XboxGameOverlay",
-                        "Microsoft.XboxGamingOverlay",
-                        "Microsoft.XboxIdentityProvider",
-                        "Microsoft.XboxSpeechToTextOverlay",
-                        "Microsoft.YourPhone",
-                        "Microsoft.ZuneMusic",
-                        "Microsoft.ZuneVideo"
-                   ],
-    "UpdateDrivers":  {
-                          "IsPresent":  true
-                      },
-    "UpdateWindows":  {
-                          "IsPresent":  true
-                      }
+  "Autopilot": { "IsPresent": true },
+  "AddNetFX3": { "IsPresent": true },
+  "RemoveAppx": [
+    "Clipchamp.Clipchamp",
+    "Microsoft.BingNews",
+    "Microsoft.BingSearch",
+    "Microsoft.BingWeather",
+    "Microsoft.DesktopAppInstaller",
+    "Microsoft.GamingApp",
+    "Microsoft.GetHelp",
+    "Microsoft.MicrosoftOfficeHub",
+    "Microsoft.MicrosoftSolitaireCollection",
+    "Microsoft.MicrosoftStickyNotes",
+    "Microsoft.OutlookForWindows",
+    "Microsoft.Paint",
+    "Microsoft.PowerAutomateDesktop",
+    "Microsoft.Todos",
+    "Microsoft.Windows.DevHome",
+    "Microsoft.WindowsAlarms",
+    "Microsoft.WindowsCalculator",
+    "Microsoft.WindowsFeedbackHub",
+    "Microsoft.WindowsSoundRecorder",
+    "Microsoft.Xbox.TCUI",
+    "Microsoft.XboxGamingOverlay",
+    "Microsoft.XboxIdentityProvider",
+    "Microsoft.XboxSpeechToTextOverlay",
+    "Microsoft.YourPhone",
+    "Microsoft.ZuneMusic",
+    "MicrosoftCorporationII.QuickAssist",
+    "MicrosoftWindows.Client.WebExperience",
+  ],
+  "UpdateDrivers": { "IsPresent": true },
+  "UpdateWindows": { "IsPresent": true }
 }
 '@
 If (!(Test-Path "C:\ProgramData\OSDeploy")) {
