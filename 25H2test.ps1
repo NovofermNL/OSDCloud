@@ -1,17 +1,21 @@
-﻿Write-Host  -ForegroundColor Cyan 'Windows 11 25H2 test'
-#================================================
+Write-Host -ForegroundColor Yellow "Starten van test installatie Windows 11 25H2 NL"
+
+#################################################################
 #   [PreOS] Update Module
-#================================================
-if ((Get-MyComputerModel) -match 'Virtual') {
-    Write-Host  -ForegroundColor Green "Setting Display Resolution to 1600x"
-    Set-DisRes 1600
-}
+#################################################################
+Write-Host -ForegroundColor Green "Updaten OSD PowerShell Module"
 
-Write-Host -ForegroundColor Green "Updating OSD PowerShell Module"
-Install-Module OSD -Force
+# NuGet-provider en PSGallery vertrouwen (handig in WinPE/clean)
+try { Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction Stop | Out-Null }
+catch { Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null }
 
-Write-Host  -ForegroundColor Green "Importing OSD PowerShell Module"
-Import-Module OSD -Force   
+try { Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction Stop } catch {}
+
+Install-Module OSD -Force -ErrorAction SilentlyContinue
+
+Write-Host -ForegroundColor Green "Importeren OSD PowerShell Module"
+Import-Module OSD -Force
+
 
 #=======================================================================
 #   [OS] Params and Start-OSDCloud
