@@ -116,17 +116,34 @@ $AutopilotOOBEJson | Out-File -FilePath "C:\ProgramData\OSDeploy\OSDeploy.Autopi
 #>
 
 #================================================
-#  [PostOS] AutopilotOOBE CMD Command Line
+#  [PostOS] OOBE.cmd (one-shot, geen expliciete reboot)
 #================================================
 Write-Host -ForegroundColor Green "Create C:\Windows\Setup\Scripts\OOBE.cmd"
+$null = New-Item -ItemType Directory -Path 'C:\Windows\Setup\Scripts' -Force
+
 $OOBECMD = @'
-PowerShell -NoL -Com Set-ExecutionPolicy RemoteSigned -Force
-Set Path = %PATH%;C:\Program Files\WindowsPowerShell\Scripts
-Start /Wait PowerShell -NoL -C Install-Module AutopilotOOBE -Force -Verbose
-Start /Wait PowerShell -NoL -C Install-Module OSD -Force -Verbose
-Start /Wait PowerShell -NoL -C Start-OOBEDeploy
-Start /Wait PowerShell -NoL -C Restart-Computer -Force
+@echo off
+setlocal
+set "PS=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"
+set "MARKER=%ProgramData%\OSDeploy\OOBE.done"
+
+rem -> voorkom herhaalde uitvoering
+if exist "%MARKER%" goto :EOF
+
+rem (optioneel, liever niet in OOBE)
+rem %PS% -NoProfile -ExecutionPolicy Bypass -Command "Install-Module AutopilotOOBE -Force -Scope AllUsers; Install-Module OSD -Force -Scope AllUsers"
+
+rem -> Start alleen OOBEDeploy; laat OOBEDeploy zelf herstarten indien nodig
+"%PS%" -NoProfile -ExecutionPolicy Bypass -Command "Import-Module OSD -Force; Start-OOBEDeploy"
+
+rem -> markeer als voltooid
+if not exist "%ProgramData%\OSDeploy" mkdir "%ProgramData%\OSDeploy"
+if not exist "%MARKER%" ( >"%MARKER%" echo %DATE% %TIME% )
+
+endlocal
+exit /b 0
 '@
+
 $OOBECMD | Out-File -FilePath 'C:\Windows\Setup\Scripts\OOBE.cmd' -Encoding ascii -Force
 
 #================================================
