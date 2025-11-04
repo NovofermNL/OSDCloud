@@ -1,0 +1,12 @@
+1. right click  the zip file and select Extract ALL 
+2. Click the File option from the upper left corner of the driver package folder
+
+3. Move the cursor to the Open Windows PowerShell option
+
+4. Select Open Windows PowerShell as administrator option
+
+5. Select Yes, Allow this app to make changes to your device.
+
+6. Input cmd and press Enter key
+7. Input Install.bat and press Enter key
+8. After install successfully, please restart.
