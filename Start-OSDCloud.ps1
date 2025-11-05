@@ -24,9 +24,9 @@ $Global:MyOSDCloud = [ordered]@{
     Restart               = [bool]$False
     RecoveryPartition     = [bool]$true
     OEMActivation         = [bool]$false
-    WindowsUpdate         = [bool]$true
-    WindowsUpdateDrivers  = [bool]$true
-    WindowsDefenderUpdate = [bool]$true
+    WindowsUpdate         = [bool]$false
+    WindowsUpdateDrivers  = [bool]$false
+    WindowsDefenderUpdate = [bool]$false
     SetTimeZone           = [bool]$true
     ClearDiskConfirm      = [bool]$False
     ShutdownSetupComplete = [bool]$false
@@ -77,19 +77,7 @@ try {
         # Altijd BIOS en TPM updates toestaan op HP
         $Global:MyOSDCloud.HPBIOSUpdate = $true
         $Global:MyOSDCloud.HPTPMUpdate  = $true
-
-        # HPIA all ENABLE, behalve bij uitzonderingen
-        if ($Product -ne '83B2' -and $Model -notmatch 'zbook') {
-            # Geen uitzondering: HPIA all aan
-            $Global:MyOSDCloud.HPIAALL = $true
-        }
-        else {
-            # Uitzondering: HPIA all uit
-            $Global:MyOSDCloud.HPIAALL = $false
-            Write-Host -ForegroundColor DarkYellow "Uitzondering gedetecteerd. HPIAALL uit voor model/product: $Model / $Product"
-        }
-
-        # Optioneel: CMSL latest driver pack forceren
+        $Global:MyOSDCloud.HPIAALL = $false
         $Global:MyOSDCloud.HPCMSLDriverPackLatest = $true
     }
     else {
