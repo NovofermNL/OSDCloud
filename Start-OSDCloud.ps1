@@ -203,14 +203,16 @@ for %%D in ("C:\OSDCloud" "C:\Drivers" "C:\Intel" "C:\ProgramData\OSDeploy") do 
 )
 
 :: ===== Post-install acties =====
+start /wait powershell.exe -command "set-executionpolicy executionpolicy RemoteSigned"
+
 echo Starten van Copy-Start.ps1 >> "%logfile%"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Copy-Start.ps1" >> "%logfile%" 2>&1
 
-echo Starten van Update-Firmware.ps1 >> "%logfile%"
-start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Deploy-RunOnceTask-OSUpdate" >> "%logfile%" 2>&1
+rem echo Starten van Update-Firmware.ps1 >> "%logfile%"
+rem start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Deploy-RunOnceTask-OSUpdate" >> "%logfile%" 2>&1
 
-echo Starten van OSUpdate.ps1 >> "%logfile%"
-::start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
+rem echo Starten van OSUpdate.ps1 >> "%logfile%"
+rem start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
 
 echo Starten van functions.osdcloud.com >> "%logfile%"
 start /wait powershell.exe -command "iex (irm functions.osdcloud.com); osdcloud-updatewindows; osdcloud-updatedrivers" >> "%logfile%" 2>&1
