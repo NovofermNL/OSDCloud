@@ -203,7 +203,7 @@ rem echo Starten van OSUpdate.ps1 >> "%logfile%"
 rem start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
 
 echo Starten van functions.osdcloud.com >> "%logfile%"
-start /wait powershell.exe -command "iex (irm functions.osdcloud.com); osdcloud-updatewindows; osdcloud-updatedrivers" >> "%logfile%" 2>&1
+start /wait powershell.exe -command "iex (irm functions.osdcloud.com); osdcloud-updatewindows; osdcloud-updatedrivers; osdcloud-netfx; osdcloud-installWinget" >> "%logfile%" 2>&1
 
 echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
 
@@ -213,10 +213,7 @@ exit /b 0
 # Schrijf het SetupComplete script weg
 $SetupComplete | Out-File -FilePath "$ScriptDir\SetupComplete.cmd" -Encoding ascii -Force
 
-
-
-
 # Herstart na 20 seconden
-#Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
-#Start-Sleep -Seconds 20
-#wpeutil reboot
+Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
+Start-Sleep -Seconds 20
+wpeutil reboot
