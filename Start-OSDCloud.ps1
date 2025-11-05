@@ -100,30 +100,7 @@ catch {
     Write-Host -ForegroundColor Red "Fout bij HP-detectie/HPIA: $($_.Exception.Message)"
 }
 
-#=======================================================================
-#  [PostOS] Driver Management voor Microsoft Surface devices
-#=======================================================================
-try {
-    # $Product is al gezet hierboven; zo niet, fallback:
-    if (-not $Product) { $Product = (Get-CimInstance Win32_ComputerSystemProduct).Name }
 
-    if ($Product -match 'Surface') {
-        Write-Host -ForegroundColor Cyan "Surface gedetecteerd: $Product - Surface driver script uitvoeren"
-
-        # TLS 1.2 afdwingen
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-        $url = 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Surface/MicrosoftSurfaceDriverIssue.ps1'
-        $scriptContent = Invoke-WebRequest -UseBasicParsing -Uri $url -ErrorAction Stop | Select-Object -ExpandProperty Content
-        Invoke-Expression $scriptContent
-    }
-    else {
-        Write-Host -ForegroundColor DarkGray "Geen Surface gedetecteerd ($Product). Surface-script overgeslagen."
-    }
-}
-catch {
-    Write-Host -ForegroundColor Red "Fout bij Surface-detectie of uitvoering: $($_.Exception.Message)"
-}
 #################################################################
 #   [PostOS] Download Files 
 #################################################################
@@ -131,7 +108,6 @@ catch {
 Write-Host -ForegroundColor Green "Download scripts voor OOBE-fase"
 
 Invoke-WebPSScript -Uri https://raw.githubusercontent.com/NovofermNL/OSDCloud/refs/heads/main/DownloadGitFiles.ps1
-
 
 #=================================================
 #    [PostOS] Unattend (oobeSystem locale)"
