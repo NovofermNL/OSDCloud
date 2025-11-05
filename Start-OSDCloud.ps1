@@ -107,7 +107,7 @@ catch {
 
 Write-Host -ForegroundColor Green "Download scripts voor OOBE-fase"
 
-Invoke-WebPSScript -Uri https://raw.githubusercontent.com/NovofermNL/OSDCloud/refs/heads/main/DownloadGitFiles.ps1
+Invoke-WebPSScript -Uri https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/DownloadGitFiles.ps1
 
 #=================================================
 #    [PostOS] Unattend (oobeSystem locale)"
