@@ -203,7 +203,7 @@ rem echo Starten van OSUpdate.ps1 >> "%logfile%"
 rem start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
 
 echo Starten van functions.osdcloud.com >> "%logfile%"
-start /wait powershell.exe -command "iex (irm functions.osdcloud.com); osdcloud-updatewindows; osdcloud-updatedrivers; osdcloud-netfx; osdcloud-installWinget" >> "%logfile%" 2>&1
+start /wait powershell.exe -command "iex (irm functions.osdcloud.com); osdcloud-updatewindows; osdcloud-updatedrivers; osdcloud-installWinget" >> "%logfile%" 2>&1
 
 echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
 
