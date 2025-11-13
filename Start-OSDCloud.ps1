@@ -103,22 +103,25 @@ Invoke-WebPSScript -Uri https://raw.githubusercontent.com/NovofermNL/OSDCloud/ma
 
 Write-Host -ForegroundColor Green "Plaatsen UnattendXml"
 
-$UnattendXml = @'
+$UnattendXml = @"
 <?xml version="1.0" encoding="utf-8"?>
 <unattend xmlns="urn:schemas-microsoft-com:unattend">
   <settings pass="oobeSystem">
     <component name="Microsoft-Windows-International-Core"
-               processorArchitecture="amd64"
-               publicKeyToken="31bf3856ad364e35"
-               language="neutral"
-               versionScope="nonSxS"
-               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-      <InputLocale>0409:00020409</InputLocale>
+      processorArchitecture="amd64"
+      publicKeyToken="31bf3856ad364e35"
+      language="neutral"
+      versionScope="nonSxS"
+      xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+      <InputLocale>0413:00020409</InputLocale>
+      <SystemLocale>nl-NL</SystemLocale>
       <UserLocale>nl-NL</UserLocale>
+      <UILanguage>nl-NL</UILanguage>
+      <UILanguageFallback>nl-NL</UILanguageFallback>
     </component>
   </settings>
 </unattend>
-'@
+"@
 
 # Voorkom draaien in volwaardige Windows
 Block-WinOS
