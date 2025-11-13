@@ -77,18 +77,15 @@ function Test-InfIsScannerClass {
         [string[]]$AllowedClasses = $InfClassFilter
     )
     try {
-        # Lees alleen de eerste ~200 regels om snel Class te vinden
         $lines = Get-Content -Path $InfPath -TotalCount 200 -ErrorAction Stop
         foreach ($line in $lines) {
             if ($line -match '^\s*Class\s*=\s*(.+?)\s*$') {
                 $cls = $Matches[1].Trim()
                 if ($AllowedClasses -contains $cls) { return $true }
-                # Sommige vendors gebruiken StillImage/Scanner varianten
                 if ($AllowedClasses | ForEach-Object { $cls -like $_ }) { return $true }
                 return $false
             }
         }
-        # Geen Class gevonden -> conservatief: niet installeren
         return $false
     } catch {
         Write-Warning "Kan INF niet lezen: $InfPath. $_"
@@ -185,7 +182,6 @@ function Install-ExePackages {
 
     Write-Host "Gevonden EXE-bestanden: $($exes.Count) — probeer stille installatie met bekende switches."
 
-    # Veelvoorkomende stille switches (volgorde: meest voorkomend eerst)
     $switchSets = @(
         '/S', '/silent', '/s', '/verysilent /suppressmsgboxes /norestart',
         '/qn', '/quiet', '/passive /norestart'
@@ -197,7 +193,6 @@ function Install-ExePackages {
             try {
                 Write-Host "Installeren EXE: $($exe.FullName) met switches: $sw"
                 $p = Start-Process -FilePath $exe.FullName -ArgumentList $sw -PassThru -Wait -WindowStyle Hidden
-                # Succescriteria: 0 of 3010 (reboot) zijn gangbaar
                 if ($p.ExitCode -in 0,3010) {
                     $ExeSuccess.Add("$($exe.FullName) [$sw]") | Out-Null
                     Write-Host "OK (code $($p.ExitCode)): $($exe.Name)"
@@ -217,7 +212,7 @@ function Install-ExePackages {
     }
 }
 
-# Uitvoering
+
 Write-Host "Stap 1/3: INF-drivers (scanner/WIA)"
 Install-InfDrivers -Root $DriverRoot
 Write-Host ""
@@ -230,7 +225,6 @@ Write-Host "Stap 3/3: EXE-installers (best-effort)"
 Install-ExePackages -Root $DriverRoot -TrySilent:$AttemptExeSilent
 Write-Host ""
 
-# Samenvatting
 Write-Host "=== Samenvatting ==="
 Write-Host ("INF   OK : {0}" -f $InfSuccess.Count)
 Write-Host ("INF   NOK: {0}" -f $InfFailed.Count)
@@ -248,3 +242,4 @@ if ($InfFailed.Count -or $MsiFailed.Count -or $ExeFailed.Count) {
 Write-Host ""
 Write-Host "Logbestand: $transcript"
 Stop-Transcript | Out-Null
+
