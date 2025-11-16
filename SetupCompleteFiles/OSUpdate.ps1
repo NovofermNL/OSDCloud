@@ -103,7 +103,7 @@ try {
 
     Write-Output "$(Get-Ts) Updates gevonden: $($WUUpdates.Count) - Start download/installatie cyclus."
 
-    # Per update downloaden en installeren (garandeert gedetailleerde logs)
+    # Per update downloaden en installeren
     foreach ($update in $WUUpdates) {
         $kbId = ($update.KBArticleIDs -join ', ')
         $titleLog = "$($update.Title) (KB:$kbId)"
