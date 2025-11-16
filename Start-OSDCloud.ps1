@@ -100,7 +100,7 @@ Invoke-WebPSScript -Uri https://raw.githubusercontent.com/NovofermNL/OSDCloud/ma
 #=================================================
 #    [PostOS] Unattend (oobeSystem locale)"
 #=================================================
-
+<#
 Write-Host -ForegroundColor Green "Plaatsen UnattendXml"
 
 $UnattendXml = @"
@@ -131,7 +131,7 @@ $UnattendXml | Out-File -FilePath $UnattendPath -Encoding utf8 -Width 2000 -Forc
 
 Write-Host "Use-WindowsUnattend -Path 'C:\' -UnattendPath $UnattendPath"
 Use-WindowsUnattend -Path 'C:\' -UnattendPath $UnattendPath | Out-Null
-
+#>
 #================================================
 #    [PostOS] OOBE CMD Command Line
 #================================================
