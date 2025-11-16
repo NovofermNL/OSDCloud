@@ -71,7 +71,6 @@ $Params = @{
     OSLicense     = "Retail"
     ZTI           = $true
     Firmware      = $true
-    SkipAutopilot = $false
 }
 Start-OSDCloud @Params
 
