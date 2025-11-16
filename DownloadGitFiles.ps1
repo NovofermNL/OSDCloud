@@ -42,3 +42,6 @@ Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCo
 
 Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Update-Firmware.ps1" `
     (Join-Path $ScriptDir 'Update-Firmware.ps1')
+
+Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-RunOnceTask.ps1" `
+    (Join-Path $ScriptDir 'Create-RunOnceTask.ps1')
