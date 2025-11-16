@@ -1,15 +1,26 @@
 Write-Host -ForegroundColor Yellow "Starten van installatie Windows 11 24H2 NL"
 
+# TLS 1.2 afdwingen voor alle webrequests
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 #################################################################
-#   [PreOS] Update Module
+#   [PreOS] Update Module
 #################################################################
 Write-Host -ForegroundColor Green "Updaten OSD PowerShell Module"
 
 # NuGet-provider en PSGallery vertrouwen (handig in WinPE/clean)
-try { Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction Stop | Out-Null }
-catch { Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null }
+try {
+    Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction Stop | Out-Null
+}
+catch {
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
+}
 
-try { Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction Stop } catch {}
+try {
+    Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction Stop
+}
+catch {
+}
 
 Install-Module OSD -Force -ErrorAction SilentlyContinue
 
@@ -17,53 +28,55 @@ Write-Host -ForegroundColor Green "Importeren OSD PowerShell Module"
 Import-Module OSD -Force
 
 #################################################################
-#   [PreOS] Dynamische HP Configuratie bepalen
+#   [PreOS] Dynamische HP Configuratie bepalen
 #################################################################
 # Standaard instellingen (voor Non-HP apparaten)
-$HPTPMUpdate = $false
-$HPBIOSUpdate = $false
-$HPCMSLDrivers = $false
-$WindowsUpdateDriversEnabled = $true # Standaard AAN
+$HPTPMUpdate               = $false
+$HPBIOSUpdate              = $false
+$HPCMSLDrivers             = $false
+$WindowsUpdateDriversEnabled = $true   # Standaard AAN
 
 try {
     # Laad de benodigde OSDCloud functies voor determinatie
-    Invoke-Expression -Command (Invoke-RestMethod -Uri functions.osdcloud.com) | Out-Null
+    Invoke-Expression (Invoke-RestMethod -Uri 'https://functions.osdcloud.com') | Out-Null
 
-    $Manufacturer = (Get-CimInstance -Class:Win32_ComputerSystem).Manufacturer
+    $cs = Get-CimInstance -ClassName Win32_ComputerSystem
+    $Manufacturer = $cs.Manufacturer
 
-    if ($Manufacturer -match "HP" -or $Manufacturer -match "Hewlett-Packard"){
+    if ($Manufacturer -match 'HP' -or $Manufacturer -match 'Hewlett-Packard') {
         $HPEnterprise = Test-HPIASupport
 
-        if ($HPEnterprise){
-            $Model = (Get-CimInstance -Class:Win32_ComputerSystem).Model
+        if ($HPEnterprise) {
+            $Model = $cs.Model
             Write-Host -ForegroundColor Cyan "HP device gedetecteerd ($Model). Dynamische updates bepalen..."
-            
 
             Invoke-Expression (Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/OSDeploy/OSD/master/cloud/modules/deviceshp.psm1') | Out-Null
             osdcloud-InstallModuleHPCMSL | Out-Null
-            
 
-            $TPM = osdcloud-HPTPMDetermine
+            $TPM  = osdcloud-HPTPMDetermine
             $BIOS = osdcloud-HPBIOSDetermine
 
-
-            $HPCMSLDrivers = $true
+            $HPCMSLDrivers             = $true
             $WindowsUpdateDriversEnabled = $false
-            
-            if ($TPM){
-                Write-Host "HP Update TPM Firmware vereist." -ForegroundColor Yellow
+
+            if ($TPM) {
+                Write-Host -ForegroundColor Yellow "HP Update TPM Firmware vereist."
                 $HPTPMUpdate = $true
             }
-            if ($BIOS -ne $false){
-                $LatestVer = (Get-HPBIOSUpdates -Latest).ver
+
+            if ($BIOS -ne $false) {
+                $LatestVer  = (Get-HPBIOSUpdates -Latest).ver
                 $CurrentVer = Get-HPBIOSVersion
-                Write-Host "HP Update System Firmware vereist (van $CurrentVer naar $LatestVer)." -ForegroundColor Yellow
+                Write-Host -ForegroundColor Yellow "HP Update System Firmware vereist (van $CurrentVer naar $LatestVer)."
                 $HPBIOSUpdate = $true
             }
             else {
                 $CurrentVer = Get-HPBIOSVersion
-                Write-Host "HP System Firmware is al actueel: $CurrentVer" -ForegroundColor Green
+                Write-Host -ForegroundColor Green "HP System Firmware is al actueel: $CurrentVer"
             }
+        }
+        else {
+            Write-Host -ForegroundColor DarkGray "HP gedetecteerd, maar geen HPIA-ondersteuning. Standaard driverlogica wordt gebruikt."
         }
     }
     else {
@@ -73,51 +86,52 @@ try {
 catch {
     Write-Host -ForegroundColor Red "Fout bij dynamische HP-detectie/HPIA: $($_.Exception.Message). Gebruikt standaard driverlogica."
 
-    $HPTPMUpdate = $false
-    $HPBIOSUpdate = $false
-    $HPCMSLDrivers = $false
+    $HPTPMUpdate               = $false
+    $HPBIOSUpdate              = $false
+    $HPCMSLDrivers             = $false
     $WindowsUpdateDriversEnabled = $true
 }
 
 #################################################################
-#   Global.MyOSDCloud
+#   Global.MyOSDCloud
 #################################################################
 
 $Global:MyOSDCloud = [ordered]@{
-    Restart                 = [bool]$False
+    Restart                 = [bool]$false
     RecoveryPartition       = [bool]$true
     OEMActivation           = [bool]$false
     WindowsUpdate           = [bool]$false
     WindowsUpdateDrivers    = [bool]$WindowsUpdateDriversEnabled
     WindowsDefenderUpdate   = [bool]$false
     SetTimeZone             = [bool]$true
-    ClearDiskConfirm        = [bool]$False
+    ClearDiskConfirm        = [bool]$false
     ShutdownSetupComplete   = [bool]$false
     SyncMSUpCatDriverUSB    = [bool]$true
     CheckSHA1               = [bool]$true
-    HPBIOSUpdate            = [bool]$HPBIOSUpdate              
+    HPBIOSUpdate            = [bool]$HPBIOSUpdate
     HPTPMUpdate             = [bool]$HPTPMUpdate
-    HPIAALL                 = [bool]$False
+    HPIAALL                 = [bool]$false
     HPCMSLDriverPackLatest  = [bool]$HPCMSLDrivers
 }
 
 #################################################################
-#   [OS] Params and Start-OSDCloud
+#   [OS] Params and Start-OSDCloud
 #################################################################
 $Params = @{
-    OSVersion       = "Windows 11"
-    OSBuild         = "25H2"
-    OSEdition       = "Pro"
-    OSLanguage      = "nl-nl"
-    OSLicense       = "Retail"
-    ZTI             = $true
-    Firmware        = $true
-    SkipAutopilot   = $false
+    OSVersion     = 'Windows 11'
+    OSBuild       = '24H2'     # Aangepast zodat dit overeenkomt met je banner
+    OSEdition     = 'Pro'
+    OSLanguage    = 'nl-nl'
+    OSLicense     = 'Retail'
+    ZTI           = $true
+    Firmware      = $true
+    SkipAutopilot = $false
 }
+
 Start-OSDCloud @Params
 
 #################################################################
-#   [PostOS] Zorg dat doelmappen bestaan
+#   [PostOS] Zorg dat doelmappen bestaan
 #################################################################
 $ScriptDir = 'C:\Windows\Setup\Scripts'
 if (-not (Test-Path $ScriptDir)) {
@@ -130,15 +144,14 @@ if (-not (Test-Path $Panther)) {
 }
 
 #################################################################
-#   [PostOS] Download Files 
+#   [PostOS] Download Files
 #################################################################
 
 Write-Host -ForegroundColor Green "Download scripts voor OOBE-fase"
-
-Invoke-WebPSScript -Uri https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/DownloadGitFiles.ps1
+Invoke-WebPSScript -Uri 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/DownloadGitFiles.ps1'
 
 #################################################
-#    [PostOS] Unattend (oobeSystem locale)"
+#   [PostOS] Unattend (oobeSystem locale)
 #################################################
 
 Write-Host -ForegroundColor Green "Plaatsen UnattendXml"
@@ -173,17 +186,18 @@ Write-Host "Use-WindowsUnattend -Path 'C:\' -UnattendPath $UnattendPath"
 Use-WindowsUnattend -Path 'C:\' -UnattendPath $UnattendPath | Out-Null
 
 ################################################
-#    [PostOS] OOBE CMD Command Line
+#   [PostOS] OOBE CMD Command Line
 ################################################
 $OOBECMD = @'
 @echo off
 :: OOBE fase: verwijder standaard apps
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File C:\Windows\Setup\Scripts\Remove-AppX.ps1
 '@
+
 $OOBECMD | Out-File -FilePath "$ScriptDir\oobe.cmd" -Encoding ascii -Force
 
 ################################################
-#    [PostOS] SetupComplete
+#   [PostOS] SetupComplete
 ################################################
 
 $SetupComplete = @'
@@ -210,7 +224,6 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v HideRecommendedSe
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v ForceClassicControlPanel /t REG_DWORD /d 1 /f
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v HiberbootEnabled /t REG_DWORD /d 0 /f
 
-
 :: ===== DEFAULT USER-PROFIEL =====
 echo === Default user tweaks laden %date% %time% === >> "%logfile%"
 reg load HKU\DefUser "C:\Users\Default\NTUSER.DAT" >> "%logfile%" 2>&1
@@ -227,14 +240,14 @@ if exist "C:\OSDCloud\Logs" copy /Y "C:\OSDCloud\Logs\*.log" "%logfolder%" >> "%
 if exist "C:\ProgramData\OSDeploy" copy /Y "C:\ProgramData\OSDeploy\*.log" "%logfolder%" >> "%logfile%" 2>&1
 
 for %%D in ("C:\OSDCloud" "C:\Drivers" "C:\Intel" "C:\ProgramData\OSDeploy") do (
-  if exist %%D (
-    echo Removing folder %%D >> "%logfile%"
-    rmdir /S /Q %%D >> "%logfile%" 2>&1
-  )
+  if exist %%D (
+    echo Removing folder %%D >> "%logfile%"
+    rmdir /S /Q %%D >> "%logfile%" 2>&1
+  )
 )
 
 :: ===== Post-install acties =====
-start /wait powershell.exe -command "set-executionpolicy executionpolicy RemoteSigned"
+powershell -NoProfile -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine -Force"
 
 echo Starten van Copy-Start.ps1 >> "%logfile%"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Copy-Start.ps1" >> "%logfile%" 2>&1
@@ -246,7 +259,7 @@ rem echo Starten van OSUpdate.ps1 >> "%logfile%"
 rem start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
 
 echo Starten van functions.osdcloud.com >> "%logfile%"
-start /wait powershell.exe -command "iex (irm functions.osdcloud.com); osdcloud-updatewindows; osdcloud-updatedrivers; osdcloud-installWinget" >> "%logfile%" 2>&1
+start /wait powershell.exe -NoProfile -Command "iex (irm 'https://functions.osdcloud.com'); osdcloud-updatewindows; osdcloud-updatedrivers; osdcloud-installWinget" >> "%logfile%" 2>&1
 
 echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
 
