@@ -34,6 +34,31 @@ $Global:MyOSDCloud = [ordered]@{
     CheckSHA1             = [bool]$true
 }
 
+#=======================================================================
+#  [PostOS] HP Driver/BIOS/TPM (HPIA) – Detectie en instellingen
+#=======================================================================
+try {
+    $Product = Get-MyComputerProduct
+    $Model   = Get-MyComputerModel
+
+    if (Test-HPIASupport) {
+        Write-Host -ForegroundColor Cyan "HP device gedetecteerd ($Model / $Product). HPIA/BIOS/TPM updates inschakelen"
+
+        $Global:MyOSDCloud.HPBIOSUpdate = $true
+        $Global:MyOSDCloud.HPTPMUpdate  = $true
+        $Global:MyOSDCloud.HPIAALL = $false
+        $Global:MyOSDCloud.HPCMSLDriverPackLatest = $true
+        $Global:MyOSDCloud.WindowsUpdateDrivers = $false
+    }
+    else {
+        Write-Host -ForegroundColor DarkGray "Geen HP/HPIA-ondersteuning gedetecteerd. HP-specifieke updates worden niet geactiveerd."
+    }
+}
+catch {
+    Write-Host -ForegroundColor Red "Fout bij HP-detectie/HPIA: $($_.Exception.Message)"
+}
+
+
 
 #################################################################
 #   [OS] Params and Start-OSDCloud
@@ -62,30 +87,6 @@ if (-not (Test-Path $ScriptDir)) {
 $Panther = 'C:\Windows\Panther'
 if (-not (Test-Path $Panther)) {
     New-Item -ItemType Directory -Path $Panther -Force | Out-Null
-}
-
-#=======================================================================
-#  [PostOS] HP Driver/BIOS/TPM (HPIA) – Detectie en instellingen
-#=======================================================================
-try {
-    $Product = Get-MyComputerProduct
-    $Model   = Get-MyComputerModel
-
-    if (Test-HPIASupport) {
-        Write-Host -ForegroundColor Cyan "HP device gedetecteerd ($Model / $Product). HPIA/BIOS/TPM updates inschakelen"
-
-        $Global:MyOSDCloud.HPBIOSUpdate = $true
-        $Global:MyOSDCloud.HPTPMUpdate  = $true
-        $Global:MyOSDCloud.HPIAALL = $false
-        $Global:MyOSDCloud.HPCMSLDriverPackLatest = $true
-        $Global:MyOSDCloud.WindowsUpdateDrivers = $false
-    }
-    else {
-        Write-Host -ForegroundColor DarkGray "Geen HP/HPIA-ondersteuning gedetecteerd. HP-specifieke updates worden niet geactiveerd."
-    }
-}
-catch {
-    Write-Host -ForegroundColor Red "Fout bij HP-detectie/HPIA: $($_.Exception.Message)"
 }
 
 
@@ -175,6 +176,7 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v Hiberbo
 echo === Default user tweaks laden %date% %time% === >> "%logfile%"
 reg load HKU\DefUser "C:\Users\Default\NTUSER.DAT" >> "%logfile%" 2>&1
 reg add "HKU\DefUser\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f >> "%logfile%" 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f >> "%logfile%" 2>&1
 reg add "HKU\DefUser\Control Panel\Desktop" /v AutoEndTasks /t REG_SZ /d 1 /f >> "%logfile%" 2>&1
 reg unload HKU\DefUser >> "%logfile%" 2>&1
 echo === Default user tweaks klaar %date% %time% === >> "%logfile%"
