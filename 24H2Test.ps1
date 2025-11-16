@@ -25,7 +25,7 @@ $WindowsUpdateDrivers   = $true
 
 try {
     # Laad OSDCloud helper-functies (Get-MyComputerModel, Test-HPIASupport, etc.)
-    Invoke-Expression (Invoke-RestMethod -Uri 'https://functions.osdcloud.com') | Out-Null
+    Invoke-Expression (Invoke-RestMethod -Uri 'functions.osdcloud.com') | Out-Null
 
     $Product = Get-MyComputerProduct
     $Model   = Get-MyComputerModel
