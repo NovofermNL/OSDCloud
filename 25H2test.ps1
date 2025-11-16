@@ -25,7 +25,7 @@ $WindowsUpdateDriversEnabled = $true   # Standaard AAN
 
 try {
     # Laad de benodigde OSDCloud functies voor determinatie
-    Invoke-Expression (Invoke-RestMethod -Uri 'https://functions.osdcloud.com') | Out-Null
+    Invoke-Expression (Invoke-RestMethod -Uri 'functions.osdcloud.com') | Out-Null
 
     $cs = Get-CimInstance -ClassName Win32_ComputerSystem
     $Manufacturer = $cs.Manufacturer
