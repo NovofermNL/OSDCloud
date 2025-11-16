@@ -1,4 +1,4 @@
-Write-Host -ForegroundColor Yellow "Starten van installatie Windows 11 24H2 NL"
+Write-Host -ForegroundColor Yellow "Starten van installatie Windows 11 25H2 NL"
 
 # TLS 1.2 afdwingen voor alle webrequests
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -106,7 +106,7 @@ $Global:MyOSDCloud = [ordered]@{
 #################################################################
 $Params = @{
     OSVersion     = 'Windows 11'
-    OSBuild       = '24H2'     # Aangepast zodat dit overeenkomt met je banner
+    OSBuild       = '25H2'     # Aangepast zodat dit overeenkomt met je banner
     OSEdition     = 'Pro'
     OSLanguage    = 'nl-nl'
     OSLicense     = 'Retail'
