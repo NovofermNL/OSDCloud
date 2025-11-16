@@ -113,7 +113,7 @@ $UnattendXml = @"
       language="neutral"
       versionScope="nonSxS"
       xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-      <InputLocale>0413:00020409</InputLocale>
+      <InputLocale>0413:00000413</InputLocale>
       <SystemLocale>nl-NL</SystemLocale>
       <UserLocale>nl-NL</UserLocale>
       <UILanguage>nl-NL</UILanguage>
