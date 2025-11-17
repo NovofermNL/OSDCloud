@@ -210,9 +210,6 @@ start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Set
 rem echo Starten van Update-Firmware.ps1
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Create-RunOnceTask.ps1"
 
-echo Starten van functions.osdcloud.com >> "%logfile%"
-rem start /wait powershell.exe -command "iex (irm functions.osdcloud.com); osdcloud-updatewindows"
-
 echo ===Custom SetupComplete Afgerond %date% %time% ===
 exit /b 0
 '@
