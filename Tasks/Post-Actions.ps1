@@ -13,24 +13,23 @@ Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer" -Nam
 Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name "ForceClassicControlPanel" -Type DWord -Value 1 -Force
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" -Type DWord -Value 0 -Force
 
-$veBase = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
-Set-ItemProperty -Path "$veBase\ControlAnimations" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\AnimateMinMax" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\TaskbarAnimations" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\DWMAeroPeekEnabled" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\MenuAnimation" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\TooltipAnimation" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\SelectionFade" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\DWMSaveThumbnailEnabled" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\CursorShadow" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\ListviewShadow" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\ThumbnailsOrIcon" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\ListviewAlphaSelect" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\DragFullWindows" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\ComboBoxAnimation" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\FontSmoothing" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\ListBoxSmoothScrolling" -Name "DefaultValue" -Type DWord -Value 0 -Force
-Set-ItemProperty -Path "$veBase\DropShadow" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\ControlAnimations" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\AnimateMinMax" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\TaskbarAnimations" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\DWMAeroPeekEnabled" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\MenuAnimation" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\TooltipAnimation" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\SelectionFade" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\DWMSaveThumbnailEnabled" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\CursorShadow" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\ListviewShadow" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\ThumbnailsOrIcon" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\ListviewAlphaSelect" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\DragFullWindows" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\ComboBoxAnimation" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\FontSmoothing" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\ListBoxSmoothScrolling" -Name "DefaultValue" -Type DWord -Value 0 -Force
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\DropShadow" -Name "DefaultValue" -Type DWord -Value 0 -Force
 
 # ===== DEFAULT USER PROFIEL =====
 $DefaultUserHive = "C:\Users\Default\NTUSER.DAT"
