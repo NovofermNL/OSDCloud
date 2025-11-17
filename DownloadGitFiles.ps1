@@ -37,11 +37,18 @@ Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCo
 Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/New-ComputerName.ps1" `
     (Join-Path $ScriptDir 'New-ComputerName.ps1')
 
+Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/refs/heads/main/Tasks/Post-Actions.ps1" `
+    (Join-Path $ScriptDir 'Create-RunOnceTask.ps1')
+
+    Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-RunOnceTask.ps1" `
+    (Join-Path $ScriptDir 'Create-RunOnceTask.ps1')
+
 #Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Deploy-RunOnceTask-OSUpdate.ps1" `
 #    (Join-Path $ScriptDir 'Deploy-RunOnceTask-OSUpdate.ps1')
 
 #Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Update-Firmware.ps1" `
 #    (Join-Path $ScriptDir 'Update-Firmware.ps1')
 
-Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-RunOnceTask.ps1" `
-    (Join-Path $ScriptDir 'Create-RunOnceTask.ps1')
+
+
+
