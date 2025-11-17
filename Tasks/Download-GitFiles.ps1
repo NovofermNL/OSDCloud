@@ -36,8 +36,8 @@ Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCo
 Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Create-RunOnceTask.ps1" (Join-Path $ScriptDir 'Create-RunOnceTask.ps1')
 
 # OSDCleanup + Task Scheduler
-Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/refs/heads/main/Tasks/OSDCleanUp.ps1" (Join-Path $ScriptDir 'OSDCleanUp.ps1')
-Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/refs/heads/main/Tasks/Create-RunOnce-CleanUp.ps1" (Join-Path $ScriptDir 'Create-RunOnce-CleanUp.ps1')
+Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Tasks/OSDCleanUp.ps1" (Join-Path $ScriptDir 'OSDCleanUp.ps1')
+Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Tasks/Create-RunOnce-CleanUp.ps1" (Join-Path $ScriptDir 'Create-RunOnce-CleanUp.ps1')
 
 #Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Deploy-RunOnceTask-OSUpdate.ps1"(Join-Path $ScriptDir 'Deploy-RunOnceTask-OSUpdate.ps1')
 #Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Update-Firmware.ps1" (Join-Path $ScriptDir 'Update-Firmware.ps1')
