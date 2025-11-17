@@ -32,7 +32,7 @@ Save-FromUrl "https://github.com/NovofermNL/OSDCloud/raw/main/Files/start2.bin" 
 #Copy-Start
 Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/Copy-Start.ps1" (Join-Path $ScriptDir 'Copy-Start.ps1')
 
-Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/CMTrace-Setup.ps1" (Join-Path $ScriptDir 'CMTrace-Setup.ps1')
+Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Tasks/CMTrace-Setup.ps1" (Join-Path $ScriptDir 'CMTrace-Setup.ps1')
 
 # OSUpdate + Task Scheduler
 Save-FromUrl "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/SetupCompleteFiles/OSUpdate.ps1" (Join-Path $ScriptDir 'OSUpdate.ps1')
