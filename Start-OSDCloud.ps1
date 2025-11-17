@@ -176,10 +176,18 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v Hiberbo
 
 :: ===== DEFAULT USER-PROFIEL =====
 echo === Default user tweaks laden %date% %time% === >> "%logfile%"
+
 reg load HKU\DefUser "C:\Users\Default\NTUSER.DAT" >> "%logfile%" 2>&1
+
+:: ===== Disable ShowTaskViewButton =====
 reg add "HKU\DefUser\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f >> "%logfile%" 2>&1
+
+:: ===== Activeren VisualFXSetting =====
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f >> "%logfile%" 2>&1
+
+:: ===== Activeren AutoEndTasks =====
 reg add "HKU\DefUser\Control Panel\Desktop" /v AutoEndTasks /t REG_SZ /d 1 /f >> "%logfile%" 2>&1
+
 reg unload HKU\DefUser >> "%logfile%" 2>&1
 echo === Default user tweaks klaar %date% %time% === >> "%logfile%"
 
