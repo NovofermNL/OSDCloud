@@ -162,16 +162,10 @@ $OOBECMD | Out-File -FilePath "$ScriptDir\oobe.cmd" -Encoding ascii -Force
 $SetupComplete = @'
 @echo off
 
-:: ===== Post-install acties =====
-:: start /wait powershell.exe -command "set-executionpolicy executionpolicy RemoteSigned"
-
-rem echo Starten van Post-Actions.ps1
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Post-Actions.ps1
-
-rem echo Starten van Update-Firmware.ps1
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Create-RunOnceTask.ps1"
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Create-RunOnce-CleanUp.ps1"
 
-echo ===Custom SetupComplete Afgerond %date% %time% ===
 exit /b 0
 '@
 
@@ -179,7 +173,7 @@ exit /b 0
 #$SetupComplete | Out-File -FilePath "$ScriptDir\SetupComplete.cmd" -Encoding ascii -Force
 $SetupComplete | Out-File -FilePath "C:\OSDCloud\Scripts\SetupComplete\SetupComplete.cmd" -Encoding ascii -Force 
 
-Write-Host -ForegroundColor Green "Klaar"
+Write-Host -ForegroundColor Green "Deployment Voltooid"
 # Herstart na 20 seconden
 #Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
 #Start-Sleep -Seconds 20
