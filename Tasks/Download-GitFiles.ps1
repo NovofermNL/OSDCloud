@@ -16,7 +16,8 @@ function Save-FromUrl {
         # Atomic move na succesvolle download
         if (Test-Path -LiteralPath $Destination) { Remove-Item -LiteralPath $Destination -Force }
         Move-Item -LiteralPath $tmp -Destination $Destination
-    } catch {
+    }
+    catch {
         if (Test-Path -LiteralPath $tmp) { Remove-Item -LiteralPath $tmp -Force }
         throw
     }
