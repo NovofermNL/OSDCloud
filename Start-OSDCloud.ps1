@@ -147,21 +147,13 @@ Use-WindowsUnattend -Path 'C:\' -UnattendPath $UnattendPath | Out-Null
 #================================================
 $OOBECMD = @'
 @echo off
-:: OOBE fase: verwijder standaard apps
-start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File C:\Windows\Setup\Scripts\Remove-AppX.ps1
-'@
-$OOBECMD | Out-File -FilePath "$ScriptDir\oobe.cmd" -Encoding ascii -Force
-
-#================================================
-#    [PostOS] SetupComplete
-#================================================
-
-$SetupComplete = @'
-@echo off
-:: Setup logging
+:: OOBE
 for /f %%a in ('powershell -NoProfile -Command "(Get-Date).ToString('yyyy-MM-dd-HHmmss')"') do set logname=%%a-Cleanup-Script.log
 set logfolder=C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\OSD
 set logfile=%logfolder%\%logname%
+
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File C:\Windows\Setup\Scripts\Remove-AppX.ps1
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Copy-Start.ps1"
 
 :: Zorg dat logmap bestaat
 if not exist "%logfolder%" mkdir "%logfolder%"
@@ -169,6 +161,7 @@ if not exist "%logfolder%" mkdir "%logfolder%"
 :: Zet drive naar C:
 C:
 
+:: Toevoegen Registry Keys
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\USB" /v DisableSelectiveSuspend /t REG_DWORD /d 1 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests /t REG_DWORD /d 0 /f
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
@@ -190,44 +183,42 @@ reg add "HKU\DefUser\Control Panel\Desktop" /v AutoEndTasks /t REG_SZ /d 1 /f >>
 reg unload HKU\DefUser >> "%logfile%" 2>&1
 echo === Default user tweaks klaar %date% %time% === >> "%logfile%"
 
-:: ===== Cleanup logs en folders =====
-echo === Start Cleanup %date% %time% === >> "%logfile%"
-if exist "C:\Windows\Temp" copy /Y "C:\Windows\Temp\*.log" "%logfolder%" >> "%logfile%" 2>&1
-if exist "C:\Temp" copy /Y "C:\Temp\*.log" "%logfolder%" >> "%logfile%" 2>&1
-if exist "C:\OSDCloud\Logs" copy /Y "C:\OSDCloud\Logs\*.log" "%logfolder%" >> "%logfile%" 2>&1
-if exist "C:\ProgramData\OSDeploy" copy /Y "C:\ProgramData\OSDeploy\*.log" "%logfolder%" >> "%logfile%" 2>&1
+'@
+$OOBECMD | Out-File -FilePath "$ScriptDir\oobe.cmd" -Encoding ascii -Force
 
-for %%D in ("C:\OSDCloud" "C:\Drivers" "C:\Intel" "C:\ProgramData\OSDeploy") do (
-  if exist %%D (
-    echo Removing folder %%D >> "%logfile%"
-    rmdir /S /Q %%D >> "%logfile%" 2>&1
-  )
-)
+#================================================
+#    [PostOS] SetupComplete
+#================================================
+
+$SetupComplete = @'
+@echo off
 
 :: ===== Post-install acties =====
-start /wait powershell.exe -command "set-executionpolicy executionpolicy RemoteSigned"
+:: start /wait powershell.exe -command "set-executionpolicy executionpolicy RemoteSigned"
 
-echo Starten van Copy-Start.ps1 >> "%logfile%"
-start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Copy-Start.ps1" >> "%logfile%" 2>&1
+rem echo Starten van Post-Actions.ps1 >> "%logfile%"
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Post-Actions.ps1  >> "%logfile%" 2>&1
 
 rem echo Starten van Update-Firmware.ps1 >> "%logfile%"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Create-RunOnceTask.ps1" >> "%logfile%" 2>&1
 
-rem echo Starten van OSUpdate.ps1 >> "%logfile%"
-rem start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\OSUpdate.ps1" >> "%logfile%" 2>&1
-
 echo Starten van functions.osdcloud.com >> "%logfile%"
-start /wait powershell.exe -command "iex (irm functions.osdcloud.com); osdcloud-updatewindows" >> "%logfile%" 2>&1
+rem start /wait powershell.exe -command "iex (irm functions.osdcloud.com); osdcloud-updatewindows" >> "%logfile%" 2>&1
+
+" >> "%logfile%" 2>&1
 
 echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
+
 
 exit /b 0
 '@
 
 # Schrijf het SetupComplete script weg
-$SetupComplete | Out-File -FilePath "$ScriptDir\SetupComplete.cmd" -Encoding ascii -Force
+#$SetupComplete | Out-File -FilePath "$ScriptDir\SetupComplete.cmd" -Encoding ascii -Force
+$SetupComplete | Out-File -FilePath "C:\OSDCloud\Scripts\SetupComplete\SetupComplete.cmd" -Encoding ascii -Force 
 
+Write-Host -ForegroundColor Green "Klaar"
 # Herstart na 20 seconden
-Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
-Start-Sleep -Seconds 20
-wpeutil reboot
+#Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
+#Start-Sleep -Seconds 20
+#wpeutil reboot
