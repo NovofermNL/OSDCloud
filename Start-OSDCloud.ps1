@@ -51,7 +51,7 @@ try {
 
         # Alleen HPIA Drivers (geen Software/Firmware via HPIA)
         $Global:MyOSDCloud.HPIADrivers = $true
-        $Global:MyOSDCloud.HPIAALL     = $false
+        $Global:MyOSDCloud.HPIAALL = $false
 
         # Optioneel: nieuwste HP-driverpack via HPCMSL
         $Global:MyOSDCloud.HPCMSLDriverPackLatest = $true
@@ -204,20 +204,16 @@ $SetupComplete = @'
 :: ===== Post-install acties =====
 :: start /wait powershell.exe -command "set-executionpolicy executionpolicy RemoteSigned"
 
-rem echo Starten van Post-Actions.ps1 >> "%logfile%"
-start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Post-Actions.ps1  >> "%logfile%" 2>&1
+rem echo Starten van Post-Actions.ps1
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Post-Actions.ps1
 
-rem echo Starten van Update-Firmware.ps1 >> "%logfile%"
-start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Create-RunOnceTask.ps1" >> "%logfile%" 2>&1
+rem echo Starten van Update-Firmware.ps1
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Create-RunOnceTask.ps1"
 
 echo Starten van functions.osdcloud.com >> "%logfile%"
-rem start /wait powershell.exe -command "iex (irm functions.osdcloud.com); osdcloud-updatewindows" >> "%logfile%" 2>&1
+rem start /wait powershell.exe -command "iex (irm functions.osdcloud.com); osdcloud-updatewindows"
 
-" >> "%logfile%" 2>&1
-
-echo === SetupComplete Afgerond %date% %time% === >> "%logfile%"
-
-
+echo ===Custom SetupComplete Afgerond %date% %time% ===
 exit /b 0
 '@
 
