@@ -37,6 +37,7 @@ $Global:MyOSDCloud = [ordered]@{
 #=======================================================================
 #  [PostOS] HP Driver/BIOS/TPM (HPIA) – Detectie en instellingen
 #=======================================================================
+
 try {
     $Product = Get-MyComputerProduct
     $Model   = Get-MyComputerModel
@@ -44,10 +45,18 @@ try {
     if (Test-HPIASupport) {
         Write-Host -ForegroundColor Cyan "HP device gedetecteerd ($Model / $Product). HPIA/BIOS/TPM updates inschakelen"
 
-        $Global:MyOSDCloud.HPBIOSUpdate = $true
+        # TPM + BIOS updates via HP-functies van OSDCloud
         $Global:MyOSDCloud.HPTPMUpdate  = $true
-        $Global:MyOSDCloud.HPIAALL = $false
+        $Global:MyOSDCloud.HPBIOSUpdate = $true
+
+        # Alleen HPIA Drivers (geen Software/Firmware via HPIA)
+        $Global:MyOSDCloud.HPIADrivers = $true
+        $Global:MyOSDCloud.HPIAALL     = $false
+
+        # Optioneel: nieuwste HP-driverpack via HPCMSL
         $Global:MyOSDCloud.HPCMSLDriverPackLatest = $true
+
+        # Drivers niet meer via Windows Update
         $Global:MyOSDCloud.WindowsUpdateDrivers = $false
     }
     else {
@@ -57,6 +66,7 @@ try {
 catch {
     Write-Host -ForegroundColor Red "Fout bij HP-detectie/HPIA: $($_.Exception.Message)"
 }
+
 
 
 
