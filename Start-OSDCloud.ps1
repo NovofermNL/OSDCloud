@@ -205,7 +205,7 @@ $OOBECMD | Out-File -FilePath "$ScriptDir\oobe.cmd" -Encoding ascii -Force
 $SetupComplete = @'
 @echo off
 
-start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Create-RunOnceTask.ps1"
+start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Create-RunOnce-OSUpdate.ps1"
 start /wait powershell.exe -NoLogo -ExecutionPolicy Bypass -File "C:\Windows\Setup\Scripts\Create-RunOnce-CleanUp.ps1"
 
 exit /b 0
