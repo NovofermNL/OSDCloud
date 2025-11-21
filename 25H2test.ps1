@@ -24,7 +24,7 @@ $HPCMSLDrivers             = $false
 $WindowsUpdateDriversEnabled = $true   # Standaard AAN
 
 try {
-    # Laad de benodigde OSDCloud functies voor determinatie
+    # Laad de benodigde OSDCloud functies
     Invoke-Expression (Invoke-RestMethod -Uri 'functions.osdcloud.com') | Out-Null
 
     $cs = Get-CimInstance -ClassName Win32_ComputerSystem
