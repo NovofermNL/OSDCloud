@@ -251,4 +251,4 @@ Write-Host -ForegroundColor Green "Deployment Voltooid"
 # Herstart na 20 seconden
 #Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
 #Start-Sleep -Seconds 20
-#wpeutil reboot
+wpeutil reboot
