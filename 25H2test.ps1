@@ -18,8 +18,8 @@ Import-Module OSD -Force
 #   [PreOS] Dynamische HP Configuratie bepalen
 #################################################################
 # Standaard instellingen (voor Non-HP apparaten)
-$HPTPMUpdate               = $true
-$HPBIOSUpdate              = $true
+$HPTPMUpdate               = $false
+$HPBIOSUpdate              = $false
 $HPCMSLDrivers             = $false
 $WindowsUpdateDriversEnabled = $true   # Standaard AAN
 
