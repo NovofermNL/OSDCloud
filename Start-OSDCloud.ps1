@@ -1,4 +1,4 @@
-Write-Host -ForegroundColor Yellow "Starten van installatie Windows 11 24H2 NL"
+Write-Host -ForegroundColor Yellow "Starten van installatie Windows 11 25H2 NL"
 
 #################################################################
 #   [PreOS] Update Module
