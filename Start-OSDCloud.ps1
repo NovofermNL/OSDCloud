@@ -24,8 +24,8 @@ $Global:MyOSDCloud = [ordered]@{
     Restart               = [bool]$False
     RecoveryPartition     = [bool]$true
     OEMActivation         = [bool]$true
-    WindowsUpdate         = [bool]$false
-    WindowsUpdateDrivers  = [bool]$false
+    WindowsUpdate         = [bool]$true
+    WindowsUpdateDrivers  = [bool]$true
     WindowsDefenderUpdate = [bool]$false
     SetTimeZone           = [bool]$true
     ClearDiskConfirm      = [bool]$False
@@ -46,11 +46,11 @@ try {
         Write-Host -ForegroundColor Cyan "HP device gedetecteerd ($Model / $Product). HPIA/BIOS/TPM updates inschakelen"
 
         # TPM + BIOS updates via HP-functies van OSDCloud
-        $Global:MyOSDCloud.HPTPMUpdate  = $false
-        $Global:MyOSDCloud.HPBIOSUpdate = $false
+        $Global:MyOSDCloud.HPTPMUpdate  = $true
+        $Global:MyOSDCloud.HPBIOSUpdate = $true
 
         # Alleen HPIA Drivers (geen Software/Firmware via HPIA)
-        $Global:MyOSDCloud.HPIADrivers = $false
+        $Global:MyOSDCloud.HPIADrivers = $true
         $Global:MyOSDCloud.HPIAALL = $false
 
         # Optioneel: nieuwste HP-driverpack via HPCMSL
