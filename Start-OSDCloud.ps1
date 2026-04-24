@@ -23,15 +23,15 @@ Import-Module OSD -Force
 $Global:MyOSDCloud = [ordered]@{
     Restart               = [bool]$False
     RecoveryPartition     = [bool]$true
-    OEMActivation         = [bool]$false
-    WindowsUpdate         = [bool]$true
-    WindowsUpdateDrivers  = [bool]$true
+    OEMActivation         = [bool]$true
+    WindowsUpdate         = [bool]$false
+    WindowsUpdateDrivers  = [bool]$false
     WindowsDefenderUpdate = [bool]$false
     SetTimeZone           = [bool]$true
     ClearDiskConfirm      = [bool]$False
     ShutdownSetupComplete = [bool]$false
     SyncMSUpCatDriverUSB  = [bool]$true
-    CheckSHA1             = [bool]$true
+    CheckSHA1             = [bool]$false
 }
 
 #=======================================================================
@@ -46,11 +46,11 @@ try {
         Write-Host -ForegroundColor Cyan "HP device gedetecteerd ($Model / $Product). HPIA/BIOS/TPM updates inschakelen"
 
         # TPM + BIOS updates via HP-functies van OSDCloud
-        $Global:MyOSDCloud.HPTPMUpdate  = $true
-        $Global:MyOSDCloud.HPBIOSUpdate = $true
+        $Global:MyOSDCloud.HPTPMUpdate  = $false
+        $Global:MyOSDCloud.HPBIOSUpdate = $false
 
         # Alleen HPIA Drivers (geen Software/Firmware via HPIA)
-        $Global:MyOSDCloud.HPIADrivers = $true
+        $Global:MyOSDCloud.HPIADrivers = $false
         $Global:MyOSDCloud.HPIAALL = $false
 
         # Optioneel: nieuwste HP-driverpack via HPCMSL
@@ -76,7 +76,7 @@ catch {
 $Params = @{
     OSVersion     = "Windows 11"
     OSBuild       = "25H2"
-    OSEdition     = "Enterprise"
+    OSEdition     = "Pro"
     OSLanguage    = "nl-nl"
     OSLicense     = "Volume"
     ZTI           = $true
@@ -219,4 +219,4 @@ Write-Host -ForegroundColor Green "Deployment Voltooid"
 # Herstart na 20 seconden
 #Write-Host -ForegroundColor Green "Herstart in 20 seconden..."
 #Start-Sleep -Seconds 20
-#wpeutil reboot
+wpeutil reboot
