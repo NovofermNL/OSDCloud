@@ -44,7 +44,7 @@ try {
             $BIOS = osdcloud-HPBIOSDetermine
 
             $HPCMSLDrivers             = $true
-            $WindowsUpdateDriversEnabled = $false
+            $WindowsUpdateDriversEnabled = $true
 
             if ($TPM) {
                 Write-Host -ForegroundColor Yellow "HP Update TPM Firmware vereist."
