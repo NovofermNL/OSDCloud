@@ -70,10 +70,10 @@ catch {
 #   Global.MyOSDCloud
 #################################################################
 $Global:MyOSDCloud = [ordered]@{
-    Restart                 = [bool]$false
+    Restart                 = [bool]$true
     RecoveryPartition       = [bool]$true
-    OEMActivation           = [bool]$false
-    WindowsUpdate           = [bool]$false
+    OEMActivation           = [bool]$true
+    WindowsUpdate           = [bool]$true
     WindowsUpdateDrivers    = [bool]$WindowsUpdateDriversEnabled
     WindowsDefenderUpdate   = [bool]$false
     SetTimeZone             = [bool]$true
