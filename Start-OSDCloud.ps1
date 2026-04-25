@@ -7,7 +7,7 @@ Write-Host -ForegroundColor Yellow "Starten van installatie Windows 11 25H2 NL"
 #   [PreOS] Update Module
 #################################################################
 Write-Host -ForegroundColor Green "Updaten OSD PowerShell Module"
-Install-Module OSD -Force -SkipPublisherCheck -ErrorAction SilentlyContinue
+Install-Module OSD -Force -ErrorAction SilentlyContinue
 
 Write-Host -ForegroundColor Green "Importeren OSD PowerShell Module"
 Import-Module OSD -Force
