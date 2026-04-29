@@ -194,15 +194,6 @@ REM reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v HideRecommend
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v ForceClassicControlPanel /t REG_DWORD /d 1 /f
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v HiberbootEnabled /t REG_DWORD /d 0 /f
 
-:: ===== OUTLOOK AUTODISCOVER POLICY =====
-
-reg add "HKLM\Software\Policies\Microsoft\Office\16.0\Outlook\AutoDiscover" /v excludelastknowngoodurl /t REG_DWORD /d 1 /f
-reg add "HKLM\Software\Policies\Microsoft\Office\16.0\Outlook\AutoDiscover" /v excludescplookup /t REG_DWORD /d 0 /f
-reg add "HKLM\Software\Policies\Microsoft\Office\16.0\Outlook\AutoDiscover" /v excludehttpsrootdomain /t REG_DWORD /d 1 /f
-reg add "HKLM\Software\Policies\Microsoft\Office\16.0\Outlook\AutoDiscover" /v excludehttpsautodiscoverdomain /t REG_DWORD /d 1 /f
-reg add "HKLM\Software\Policies\Microsoft\Office\16.0\Outlook\AutoDiscover" /v excludehttpredirect /t REG_DWORD /d 0 /f
-reg add "HKLM\Software\Policies\Microsoft\Office\16.0\Outlook\AutoDiscover" /v excludesrvrecord /t REG_DWORD /d 0 /f
-reg add "HKLM\Software\Policies\Microsoft\Office\16.0\Outlook\AutoDiscover" /v disableautodiscoverv2service /t REG_DWORD /d 0 /f
 
 :: ===== VISUAL EFFECTS =====
 
@@ -231,6 +222,7 @@ reg load HKU\DefUser "C:\Users\Default\NTUSER.DAT"
 reg add "HKU\DefUser\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f
 reg add "HKU\DefUser\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f
 reg add "HKU\DefUser\Control Panel\Desktop" /v AutoEndTasks /t REG_SZ /d 1 /f
+reg add "HKU\DefaultUser\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /ve /d "" /f
 
 reg unload HKU\DefUser
 
