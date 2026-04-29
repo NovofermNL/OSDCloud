@@ -73,9 +73,9 @@ try {
 catch {
     Write-Host -ForegroundColor Red "Fout bij dynamische HP-detectie/HPIA: $($_.Exception.Message). Gebruikt standaard driverlogica."
 
-    $HPTPMUpdate               = $false
-    $HPBIOSUpdate              = $false
-    $HPCMSLDrivers             = $false
+    $HPTPMUpdate               = $true
+    $HPBIOSUpdate              = $true
+    $HPCMSLDrivers             = $true
     $WindowsUpdateDriversEnabled = $true
 }
 
