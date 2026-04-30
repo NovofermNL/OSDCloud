@@ -1,160 +1,117 @@
+# C:\Windows\Temp\Install-Office365.ps1
+#requires -RunAsAdministrator
+
 [CmdletBinding()]
 param()
 
-# --- AUTOMATISERING CONFIGURATIE ---
-$ConfigXmlUrl = "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Software/Office/Config.xml"
-$OdtExeUrl    = "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Software/Office/setup.exe"
-$WorkFolder   = "C:\Windows\Temp\OfficeInstaller"
-$LogFile      = Join-Path $WorkFolder "Install-Office365.log"
-# ----------------------------------
-
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+$ConfigXmlUrl = 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Software/Office/Config.xml'
+$OdtExeUrl    = 'https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Software/Office/setup.exe'
+$WorkFolder   = 'C:\Windows\Temp\OfficeInstaller'
+$LogFile      = Join-Path $WorkFolder 'Install-Office365.log'
+$XmlPath      = Join-Path $WorkFolder 'Configuration.xml'
+$SetupExe     = Join-Path $WorkFolder 'setup.exe'
 
 function Write-Log {
     param(
+        [Parameter(Mandatory)]
         [string]$Message,
-        [ValidateSet("INFO", "ERROR", "SUCCESS", "WARNING")]
-        [string]$Level = "INFO"
+
+        [ValidateSet('INFO','SUCCESS','WARNING','ERROR')]
+        [string]$Level = 'INFO'
     )
 
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     $line = "[$timestamp][$Level] $Message"
 
     Write-Host $line
-
     if (Test-Path $WorkFolder) {
         Add-Content -Path $LogFile -Value $line -Encoding UTF8
     }
 }
 
-function Stop-OfficeProcesses {
-    Write-Log "Controleer en sluit actieve Office/Click-to-Run processen..."
+function Test-IsSystem {
+    return [System.Security.Principal.WindowsIdentity]::GetCurrent().Name -eq 'NT AUTHORITY\SYSTEM'
+}
 
-    $OfficeProcesses = @(
-        "winword",
-        "excel",
-        "powerpnt",
-        "outlook",
-        "onenote",
-        "onenotem",
-        "msaccess",
-        "mspub",
-        "visio",
-        "winproj",
-        "teams",
-        "lync",
-        "ucmapi",
-        "groove",
-        "officeclicktorun",
-        "officec2rclient",
-        "integratedoffice",
-        "setup"
+function Stop-OfficeProcesses {
+    $officeProcesses = @(
+        'winword','excel','powerpnt','outlook','onenote','onenotem',
+        'msaccess','mspub','visio','winproj','teams','lync','ucmapi',
+        'groove','officeclicktorun','officec2rclient','integratedoffice','setup'
     )
 
-    foreach ($ProcessName in $OfficeProcesses) {
-        $Processes = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue
+    Write-Log 'Controleer en sluit actieve Office/Click-to-Run processen...'
 
-        foreach ($Process in $Processes) {
+    foreach ($name in $officeProcesses) {
+        Get-Process -Name $name -ErrorAction SilentlyContinue | ForEach-Object {
             try {
-                Write-Log "Proces afsluiten: $($Process.ProcessName) PID $($Process.Id)" "WARNING"
-                Stop-Process -Id $Process.Id -Force -ErrorAction Stop
+                Write-Log "Proces afsluiten: $($_.ProcessName) PID $($_.Id)" 'WARNING'
+                Stop-Process -Id $_.Id -Force -ErrorAction Stop
             }
             catch {
-                Write-Log "Kon proces niet afsluiten: $($Process.ProcessName) PID $($Process.Id). Fout: $($_.Exception.Message)" "WARNING"
+                Write-Log "Kon proces niet afsluiten: $($_.ProcessName) PID $($_.Id). Fout: $($_.Exception.Message)" 'WARNING'
             }
         }
     }
 
     Start-Sleep -Seconds 5
-
-    $RemainingProcesses = foreach ($ProcessName in $OfficeProcesses) {
-        Get-Process -Name $ProcessName -ErrorAction SilentlyContinue
-    }
-
-    if ($RemainingProcesses) {
-        foreach ($Process in $RemainingProcesses) {
-            Write-Log "Proces draait nog steeds: $($Process.ProcessName) PID $($Process.Id)" "WARNING"
-        }
-    }
-    else {
-        Write-Log "Geen actieve Office/Click-to-Run processen meer gevonden." "SUCCESS"
-    }
 }
 
 try {
-    Write-Log "Office 365 installatie gestart."
-
     if (Test-Path $WorkFolder) {
-        Write-Log "Oude werkmap verwijderen..."
         Remove-Item $WorkFolder -Recurse -Force -ErrorAction SilentlyContinue
     }
 
     New-Item -Path $WorkFolder -ItemType Directory -Force | Out-Null
 
+    Write-Log 'Office 365 installatie gestart.'
     Write-Log "Uitvoerende gebruiker: $([System.Security.Principal.WindowsIdentity]::GetCurrent().Name)"
+    Write-Log "Is SYSTEM: $(Test-IsSystem)"
     Write-Log "Werkmap: $WorkFolder"
 
-    $xmlPath  = Join-Path $WorkFolder "Configuration.xml"
-    $setupExe = Join-Path $WorkFolder "setup.exe"
+    Invoke-WebRequest -Uri $ConfigXmlUrl -OutFile $XmlPath -UseBasicParsing
+    Invoke-WebRequest -Uri $OdtExeUrl    -OutFile $SetupExe -UseBasicParsing
 
-    Write-Log "Download Config.xml..."
-    Invoke-WebRequest -Uri $ConfigXmlUrl -OutFile $xmlPath -UseBasicParsing
+    if (!(Test-Path $XmlPath))  { throw 'Configuration.xml is niet gedownload.' }
+    if (!(Test-Path $SetupExe)) { throw 'setup.exe is niet gedownload.' }
 
-    Write-Log "Download setup.exe..."
-    Invoke-WebRequest -Uri $OdtExeUrl -OutFile $setupExe -UseBasicParsing
-
-    if (!(Test-Path $xmlPath)) {
-        throw "Configuration.xml is niet gedownload."
-    }
-
-    if (!(Test-Path $setupExe)) {
-        throw "setup.exe is niet gedownload."
-    }
-
-    $xmlSizeKb   = [math]::Round((Get-Item $xmlPath).Length / 1KB, 2)
-    $setupSizeKb = [math]::Round((Get-Item $setupExe).Length / 1KB, 2)
+    $xmlSizeKb   = [math]::Round((Get-Item $XmlPath).Length / 1KB, 2)
+    $setupSizeKb = [math]::Round((Get-Item $SetupExe).Length / 1KB, 2)
 
     Write-Log "Configuration.xml grootte: $xmlSizeKb KB"
     Write-Log "setup.exe grootte: $setupSizeKb KB"
 
-    if ((Get-Item $setupExe).Length -lt 500KB) {
-        throw "setup.exe lijkt niet correct gedownload. Bestand is te klein. Controleer de raw GitHub URL."
+    if ((Get-Item $SetupExe).Length -lt 500KB) {
+        throw 'setup.exe lijkt niet correct gedownload. Bestand is te klein.'
     }
 
-    # Eerst alle Office en Click-to-Run processen afsluiten
     Stop-OfficeProcesses
 
-    Write-Log "Installatie start met: setup.exe /configure `"$xmlPath`""
+    Write-Log "Installatie start met: `"$SetupExe`" /configure `"$XmlPath`""
 
-    $process = Start-Process `
-        -FilePath $setupExe `
-        -ArgumentList "/configure `"$xmlPath`"" `
+    $proc = Start-Process `
+        -FilePath $SetupExe `
+        -ArgumentList "/configure `"$XmlPath`"" `
         -WorkingDirectory $WorkFolder `
         -Wait `
-        -PassThru `
-        -WindowStyle Hidden
+        -PassThru
 
-    Write-Log "Office setup.exe exitcode: $($process.ExitCode)"
+    Write-Log "Office setup.exe exitcode: $($proc.ExitCode)"
 
-    if ($process.ExitCode -eq 0) {
-        Write-Log "Office is succesvol geïnstalleerd." "SUCCESS"
-
-        Write-Log "Opruimen tijdelijke bestanden..."
-        Remove-Item $WorkFolder -Recurse -Force -ErrorAction SilentlyContinue
-
-        exit 0
+    if ($proc.ExitCode -ne 0) {
+        Write-Log 'Office installatie mislukt.' 'ERROR'
+        Write-Log 'Controleer ODT/ClickToRun logs in C:\Windows\Temp en C:\ProgramData\Microsoft\ClickToRun\Log' 'WARNING'
+        exit $proc.ExitCode
     }
-    else {
-        Write-Log "Office installatie mislukt met exitcode: $($process.ExitCode)" "ERROR"
-        Write-Log "Tijdelijke bestanden blijven staan voor troubleshooting: $WorkFolder" "WARNING"
-        Write-Log "Controleer Office logs in C:\Windows\Temp en C:\ProgramData\Microsoft\ClickToRun\Log" "WARNING"
 
-        exit $process.ExitCode
-    }
+    Write-Log 'Office is succesvol geïnstalleerd.' 'SUCCESS'
+    exit 0
 }
 catch {
-    Write-Log "FOUT: $($_.Exception.Message)" "ERROR"
-    Write-Log "Tijdelijke bestanden blijven staan voor troubleshooting: $WorkFolder" "WARNING"
+    Write-Log "FOUT: $($_.Exception.Message)" 'ERROR'
+    Write-Log 'Controleer ODT/ClickToRun logs in C:\Windows\Temp en C:\ProgramData\Microsoft\ClickToRun\Log' 'WARNING'
     exit 1
 }
