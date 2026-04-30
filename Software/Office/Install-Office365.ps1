@@ -20,7 +20,7 @@ function Write-Log {
 try {
     Write-Log "Office 365 installatie gestart (Volledig Geautomatiseerd)."
 
-    # 1. Werkmap voorbereiden
+    # folder voorbereiden
     if (Test-Path $WorkFolder) { 
         Write-Log "Oude werkmap verwijderen..."
         Remove-Item $WorkFolder -Recurse -Force -ErrorAction SilentlyContinue 
@@ -30,21 +30,12 @@ try {
     $xmlPath = Join-Path $WorkFolder "Configuration.xml"
     $setupExe = Join-Path $WorkFolder "setup.exe"
 
-    # 2. Downloaden van GitHub
+    # Downloaden van GitHub
     Write-Log "Bestanden ophalen van GitHub..."
     Invoke-WebRequest -Uri $ConfigXmlUrl -OutFile $xmlPath -UseBasicParsing
     Invoke-WebRequest -Uri $OdtExeUrl -OutFile $setupExe -UseBasicParsing
 
-    # 3. XML opschonen voor Cloud Deployment
-    # We forceren de installatie via Microsoft CDN door SourcePath te verwijderen
-    [xml]$xml = Get-Content $xmlPath
-    if ($xml.Configuration.Add.SourcePath) {
-        $xml.Configuration.Add.RemoveAttribute("SourcePath")
-        $xml.Save($xmlPath)
-        Write-Log "XML aangepast: SourcePath verwijderd voor directe CDN-installatie."
-    }
-
-    # 4. Installatie uitvoeren
+    # Installatie uitvoeren
     Write-Log "Installatie start (Configure-modus)..."
     $process = Start-Process -FilePath $setupExe -ArgumentList "/configure `"$xmlPath`"" -Wait -PassThru -WindowStyle Hidden
     
@@ -61,7 +52,7 @@ catch {
     exit 1
 }
 finally {
-    # Opruimen na afloop
+    # Opruimen
     if (Test-Path $WorkFolder) { 
         Write-Log "Opruimen tijdelijke bestanden..."
         Remove-Item $WorkFolder -Recurse -Force -ErrorAction SilentlyContinue 
