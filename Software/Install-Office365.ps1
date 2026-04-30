@@ -116,7 +116,7 @@ try {
     $xmlContent = @"
 <Configuration ID="f689756d-2e60-4ffa-a20e-d52a843b3834">
     <Info Description="Single User Configuratie" />
-    <Add OfficeClientEdition="32" Channel="MonthlyEnterprise">
+    <Add OfficeClientEdition="64" Channel="MonthlyEnterprise">
         <Product ID="O365ProPlusRetail">
             <Language ID="nl-nl" />
             <ExcludeApp ID="Groove" />
