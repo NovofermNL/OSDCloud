@@ -28,6 +28,60 @@ function Write-Log {
     }
 }
 
+function Stop-OfficeProcesses {
+    Write-Log "Controleer en sluit actieve Office/Click-to-Run processen..."
+
+    $OfficeProcesses = @(
+        "winword",
+        "excel",
+        "powerpnt",
+        "outlook",
+        "onenote",
+        "onenotem",
+        "msaccess",
+        "mspub",
+        "visio",
+        "winproj",
+        "teams",
+        "lync",
+        "ucmapi",
+        "groove",
+        "officeclicktorun",
+        "officec2rclient",
+        "integratedoffice",
+        "setup"
+    )
+
+    foreach ($ProcessName in $OfficeProcesses) {
+        $Processes = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue
+
+        foreach ($Process in $Processes) {
+            try {
+                Write-Log "Proces afsluiten: $($Process.ProcessName) PID $($Process.Id)" "WARNING"
+                Stop-Process -Id $Process.Id -Force -ErrorAction Stop
+            }
+            catch {
+                Write-Log "Kon proces niet afsluiten: $($Process.ProcessName) PID $($Process.Id). Fout: $($_.Exception.Message)" "WARNING"
+            }
+        }
+    }
+
+    Start-Sleep -Seconds 5
+
+    $RemainingProcesses = foreach ($ProcessName in $OfficeProcesses) {
+        Get-Process -Name $ProcessName -ErrorAction SilentlyContinue
+    }
+
+    if ($RemainingProcesses) {
+        foreach ($Process in $RemainingProcesses) {
+            Write-Log "Proces draait nog steeds: $($Process.ProcessName) PID $($Process.Id)" "WARNING"
+        }
+    }
+    else {
+        Write-Log "Geen actieve Office/Click-to-Run processen meer gevonden." "SUCCESS"
+    }
+}
+
 try {
     Write-Log "Office 365 installatie gestart."
 
@@ -68,6 +122,9 @@ try {
         throw "setup.exe lijkt niet correct gedownload. Bestand is te klein. Controleer de raw GitHub URL."
     }
 
+    # Eerst alle Office en Click-to-Run processen afsluiten
+    Stop-OfficeProcesses
+
     Write-Log "Installatie start met: setup.exe /configure `"$xmlPath`""
 
     $process = Start-Process `
@@ -92,6 +149,7 @@ try {
         Write-Log "Office installatie mislukt met exitcode: $($process.ExitCode)" "ERROR"
         Write-Log "Tijdelijke bestanden blijven staan voor troubleshooting: $WorkFolder" "WARNING"
         Write-Log "Controleer Office logs in C:\Windows\Temp en C:\ProgramData\Microsoft\ClickToRun\Log" "WARNING"
+
         exit $process.ExitCode
     }
 }
