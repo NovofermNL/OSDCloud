@@ -29,15 +29,16 @@ function Write-Log {
 }
 
 try {
-    Write-Host "Office 365 installatie gestart."
+    Write-Log "Office 365 installatie gestart."
 
     if (Test-Path $WorkFolder) {
+        Write-Log "Oude werkmap verwijderen..."
         Remove-Item $WorkFolder -Recurse -Force -ErrorAction SilentlyContinue
     }
 
     New-Item -Path $WorkFolder -ItemType Directory -Force | Out-Null
 
-    Write-Log "Office 365 installatie gestart als gebruiker: $([System.Security.Principal.WindowsIdentity]::GetCurrent().Name)"
+    Write-Log "Uitvoerende gebruiker: $([System.Security.Principal.WindowsIdentity]::GetCurrent().Name)"
     Write-Log "Werkmap: $WorkFolder"
 
     $xmlPath  = Join-Path $WorkFolder "Configuration.xml"
@@ -57,24 +58,14 @@ try {
         throw "setup.exe is niet gedownload."
     }
 
-    $setupSizeKb = [math]::Round((Get-Item $setupExe).Length / 1KB, 2)
     $xmlSizeKb   = [math]::Round((Get-Item $xmlPath).Length / 1KB, 2)
+    $setupSizeKb = [math]::Round((Get-Item $setupExe).Length / 1KB, 2)
 
     Write-Log "Configuration.xml grootte: $xmlSizeKb KB"
     Write-Log "setup.exe grootte: $setupSizeKb KB"
 
     if ((Get-Item $setupExe).Length -lt 500KB) {
-        throw "setup.exe lijkt niet correct gedownload. Bestand is te klein."
-    }
-
-    Write-Log "Config.xml inhoud:"
-    Get-Content $xmlPath | ForEach-Object {
-        Write-Log "XML: $_"
-    }
-
-    Write-Log "Controle bestaande Office Click-to-Run processen..."
-    Get-Process OfficeClickToRun, setup -ErrorAction SilentlyContinue | ForEach-Object {
-        Write-Log "Proces actief: $($_.Name) PID $($_.Id)" "WARNING"
+        throw "setup.exe lijkt niet correct gedownload. Bestand is te klein. Controleer de raw GitHub URL."
     }
 
     Write-Log "Installatie start met: setup.exe /configure `"$xmlPath`""
@@ -100,8 +91,7 @@ try {
     else {
         Write-Log "Office installatie mislukt met exitcode: $($process.ExitCode)" "ERROR"
         Write-Log "Tijdelijke bestanden blijven staan voor troubleshooting: $WorkFolder" "WARNING"
-        Write-Log "Controleer ook Office logs in C:\Windows\Temp en C:\ProgramData\Microsoft\ClickToRun\Log" "WARNING"
-
+        Write-Log "Controleer Office logs in C:\Windows\Temp en C:\ProgramData\Microsoft\ClickToRun\Log" "WARNING"
         exit $process.ExitCode
     }
 }
