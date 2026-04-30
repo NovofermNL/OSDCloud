@@ -3,7 +3,7 @@ param()
 
 # --- AUTOMATISERING CONFIGURATIE ---
 $ConfigXmlUrl = "https://raw.githubusercontent.com/NovofermNL/OSDCloud/main/Software/Office/Config.xml"
-$OdtExeUrl    = "https://raw.githubusercontent.com/GEBRUIKER/REPO/main/setup.exe"
+$OdtExeUrl    = "https://github.com/NovofermNL/OSDCloud/main/Software/Office/setup.exe"
 $WorkFolder   = "C:\Windows\Temp\OfficeInstaller"
 # ----------------------------------
 
